@@ -1,0 +1,11 @@
+Package: MEForLab
+Type: Package
+Title: Common analysis procedures, forestry functions, and tools for the Maine Forest Lab
+Version: 0.1.0
+Author: MIPremer
+Maintainer: Mike Premer <michael.premer@maine.edu>
+Description: This is an ongoing effort at the Univeristy of Maine and collaborators. See more at maineforestlab.com
+License: No operating license
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.2.3
