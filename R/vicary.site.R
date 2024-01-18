@@ -4,7 +4,6 @@
 #' @param SPP - Species, either "BF", or "RS"
 #' @param ht - mean top height (H40/H100)
 #' @param age - estimated age of origin
-#' @param ba - base age
 #' @return Estimated site index at base age 50
 #' @examples
 #' height("BF",65,42,50)
@@ -14,12 +13,12 @@
 
 
 
-vicary.site<- function(SPP,ht,age,ba){
+vicary.site<- function(SPP,ht,age){
   if(SPP=="RS"){
     a=110.9866}
   if(SPP=="BF"){
     a=112.3188
   }
-  site = a*(1-exp((ba/age)*log((ht-a)/-a)))
+  site = a*(1-exp((50/age)*log((ht-a)/-a)))
   return(site)
 }

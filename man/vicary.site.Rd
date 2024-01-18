@@ -4,16 +4,14 @@
 \alias{vicary.site}
 \title{Estimate site index of spruce/fir using Vicary, Brann, and Griffin}
 \usage{
-vicary.site(SPP, ht, age, ba)
+vicary.site(SPP, ht, age)
 }
 \arguments{
 \item{SPP}{- Species, either "BF", or "RS"}
 
-\item{ht}{- mean top height (H40/H100)}
+\item{ht}{- mean top height (H40)}
 
-\item{age}{- estimated age of origin}
-
-\item{ba}{- base age}
+\item{age}{- estimated age (years)}
 }
 \value{
 Estimated site index at base age 50
