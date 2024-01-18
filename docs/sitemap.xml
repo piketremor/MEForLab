@@ -13,7 +13,13 @@
     <loc>/reference/basal.area.larger.html</loc>
   </url>
   <url>
+    <loc>/reference/coord.convert.html</loc>
+  </url>
+  <url>
     <loc>/reference/create_layers.html</loc>
+  </url>
+  <url>
+    <loc>/reference/crown.overlap.html</loc>
   </url>
   <url>
     <loc>/reference/index.html</loc>
@@ -22,6 +28,24 @@
     <loc>/reference/qmd.html</loc>
   </url>
   <url>
+    <loc>/reference/relative.density.index.html</loc>
+  </url>
+  <url>
+    <loc>/reference/relative.spacing.html</loc>
+  </url>
+  <url>
+    <loc>/reference/stand.density.index.html</loc>
+  </url>
+  <url>
     <loc>/reference/upslope.html</loc>
+  </url>
+  <url>
+    <loc>/reference/vicary.height.html</loc>
+  </url>
+  <url>
+    <loc>/reference/vicary.site.html</loc>
+  </url>
+  <url>
+    <loc>/reference/vol_calc.html</loc>
   </url>
 </urlset>

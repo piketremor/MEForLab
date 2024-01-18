@@ -2,7 +2,7 @@
 % Please edit documentation in R/vol_calc_NE.R
 \name{vol_calc}
 \alias{vol_calc}
-\title{Calculate tree volume (ft3)}
+\title{Calculate tree volume (ft3) using Honer's volume equations}
 \usage{
 vol_calc(SPP, DBH, HT)
 }
@@ -17,11 +17,13 @@ vol_calc(SPP, DBH, HT)
 stem volume (ft3)
 }
 \description{
-This function allows you to calculate tree volume given species, dbh, and height
+This function allows you to calculate tree volume given species, dbh, and height using Honer's volume equations. Honer, T.G. 1967. Standard volume tables and merchantable conversion factors for the commercial tree species of central and eastern Canada. Can. Dept. Forestry Rural Devel., For. Mgmt. Res. and Serv. Inst. Info. Rep. FMR-X-5.
+
+
 }
 \examples{
-vol_calc(BF,14.1,68)
+vol_calc("BF",14.1,68)
 }
 \author{
-Premer, M.I. - Maine Forest Lab- originally coded by M. Russell
+Premer, M.I. - Maine Forest Lab
 }

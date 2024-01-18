@@ -2,7 +2,7 @@
 % Please edit documentation in R/create_layers.R
 \name{create_layers}
 \alias{create_layers}
-\title{Generate estimates of Topograhic Wetness Index, Upslope Area, and filled sinks of a Digitial Elevation Model}
+\title{Generate estimates of Topographic Wetness Index, Upslope Area, and filled sinks of a Digitial Elevation Model}
 \usage{
 create_layers(dem, fill.sinks = TRUE, deg = 0.1)
 }
