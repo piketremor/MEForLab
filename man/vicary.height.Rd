@@ -12,7 +12,7 @@ vicary.height(SPP, si, age)
 \item{si}{- estimated site index}
 
 \item{age}{- estimated age of origin}
-
+}
 \value{
 Estimated mean top height
 }

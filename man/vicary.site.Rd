@@ -9,9 +9,9 @@ vicary.site(SPP, ht, age)
 \arguments{
 \item{SPP}{- Species, either "BF", or "RS"}
 
-\item{ht}{- mean top height (H40)}
+\item{ht}{- mean top height (H40/H100)}
 
-\item{age}{- estimated age (years)}
+\item{age}{- estimated age of origin}
 }
 \value{
 Estimated site index at base age 50
