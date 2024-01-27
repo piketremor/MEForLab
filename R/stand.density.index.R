@@ -6,7 +6,7 @@
 #' @return the stand density index
 #' @examples
 #' stand.density.index(310,8.5)
-#' @author Premer, M.I. - Maine Forest Lab - originally coded by N. Osborne
+#' @author Premer, M.I. - Maine Forest Lab
 
 
 stand.density.index <- function(

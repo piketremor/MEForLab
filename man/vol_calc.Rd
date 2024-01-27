@@ -23,5 +23,5 @@ This function allows you to calculate tree volume given species, dbh, and height
 vol_calc(BF,14.1,68)
 }
 \author{
-Premer, M.I. - Maine Forest Lab- originally coded by M. Russell
+Premer, M.I. - Maine Forest Lab
 }

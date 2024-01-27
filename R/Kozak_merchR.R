@@ -14,7 +14,7 @@
 #'  Kozak, Antal. (2004). My last words on taper equations. The Forestry Chronicle. 80. 507-515. 10.5558/tfc80507-4.
 #'
 
-merch.df <- function (x, log.breaks = c(2,5,7,8,12,51), log.grades = c( "junk","pulp","cns","ssl", "lsl", "psl"), display.stems = FALSE)
+Kozak_merchR <- function (x, log.breaks = c(2,5,7,8,12,51), log.grades = c( "junk","pulp","cns","ssl", "lsl", "psl"), display.stems = FALSE)
 {
   if (!is.data.frame(x)) {
     stop("x needs to be a data.frame")

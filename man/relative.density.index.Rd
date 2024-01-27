@@ -21,5 +21,5 @@ RD
 relative.density.index(220,11.2)
 }
 \author{
-Premer, M.I. - Maine Forest Lab - originally coded by N. Osborne
+Premer, M.I. - Maine Forest Lab
 }

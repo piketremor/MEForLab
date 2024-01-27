@@ -21,5 +21,5 @@ SDI
 relative.spacing(310,8.5)
 }
 \author{
-Premer, M.I. - Maine Forest Lab - originally coded by N. Osborne
+Premer, M.I. - Maine Forest Lab
 }

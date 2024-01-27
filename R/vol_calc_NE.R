@@ -7,7 +7,7 @@
 #' @return stem volume (ft3)
 #' @examples
 #' vol_calc(BF,14.1,68)
-#' @author Premer, M.I. - Maine Forest Lab- originally coded by M. Russell
+#' @author Premer, M.I. - Maine Forest Lab
 
 
 vol_calc <- function(SPP, DBH, HT){

@@ -6,8 +6,7 @@
 #' @return Relative Density Index
 #' @examples
 #' relative.density.index(220,11.2)
-#' @author Premer, M.I. - Maine Forest Lab - originally coded by N. Osborne
-
+#' @author Premer, M.I. - Maine Forest Lab
 
 
 relative.density.index <- function(

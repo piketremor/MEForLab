@@ -6,7 +6,7 @@
 #' @return Relative Spacing
 #' @examples
 #' relative.spacing(310,8.5)
-#' @author Premer, M.I. - Maine Forest Lab - originally coded by N. Osborne
+#' @author Premer, M.I. - Maine Forest Lab
 
 
 relative.spacing <- function(

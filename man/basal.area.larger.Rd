@@ -24,5 +24,5 @@ BAL - a metric of tree demograhic position
 basal.area.larger(10.2,142,complete=FALSE)
 }
 \author{
-Premer, M.I. - Maine Forest Lab - originally coded by N. Osborne
+Premer, M.I. - Maine Forest Lab
 }
