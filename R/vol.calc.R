@@ -6,11 +6,11 @@
 #' @param HT Total Tree Height
 #' @return stem volume (ft3)
 #' @examples
-#' vol_calc("BF",14.1,68)
+#' vol.calc("BF",14.1,68)
 #' @author Premer, M.I. - Maine Forest Lab
 
 
-vol_calc <- function(SPP, DBH, HT){
+vol.calc <- function(SPP, DBH, HT){
   if(SPP=="BF"){a=2.139;  b=301.634}
   if(SPP=="EH"){a=1.112; b=350.092}
   if(SPP=="RS"){a=1.226; b=315.832}
