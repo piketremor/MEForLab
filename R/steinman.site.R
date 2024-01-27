@@ -12,7 +12,7 @@
 
 
 
-steinman.site<- function(SPP,ht,age){
+steinman.site<- function(ht,age){
   site = ((2.775*(25^-0.7403))*((1-exp(-0.00002151*15))^(-0.2795*25^0.2816)))
   return(site)
 }

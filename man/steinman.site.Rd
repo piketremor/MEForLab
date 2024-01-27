@@ -4,7 +4,7 @@
 \alias{steinman.site}
 \title{Estimate site index of spruce/fir using Steinman equations}
 \usage{
-steinman.site(SPP, ht, age)
+steinman.site(ht, age)
 }
 \arguments{
 \item{ht}{- mean top height (H40)}

@@ -4,14 +4,14 @@
 \alias{vicary.height}
 \title{Estimate top height of spruce/fir using Vicary, Brann, and Griffin}
 \usage{
-vicary.height(SPP, si, age)
+vicary.height(SPP, age, si)
 }
 \arguments{
 \item{SPP}{- Species, either "BF", or "RS"}
 
-\item{si}{- estimated site index}
-
 \item{age}{- estimated age of origin}
+
+\item{si}{- estimated site index}
 }
 \value{
 Estimated mean top height

@@ -13,12 +13,12 @@
 #'
 
 
-vicary.height <- function(SPP,si,age){
+vicary.height <- function(SPP,age,si){
   if(SPP=="RS"){
     a=110.9886}
   if(SPP=="BF"){
     a=112.3188
   }
-    height = a*((1-exp((log(1-(si/a)))/50))*age)
+    height = a*((1-exp(log(1-(si/a))/50))*age)
   return(height)
 }
