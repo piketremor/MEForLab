@@ -6,7 +6,7 @@
 #' @param age - estimated age of origin
 #' @return Estimated site index at base age 50
 #' @examples
-#' vicary.site("BF",65,42,50)
+#' vicary.site("BF",65,42)
 #' @author Premer, M.I. - Maine Forest Lab
 #' @description
 #'  Vicary, Bret P.; Brann, Thomas B.; and Griffin, Raph H.. 1984. B802: Base-Age Invariant Polymorphic Site Index Curves for Even-Aged Spruce-Fir Stands in Maine. Maine Agricultural and Forest Experiment Station Bulletins 802. https://digitalcommons.library.umaine.edu/aes_bulletin/130

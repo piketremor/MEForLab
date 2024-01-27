@@ -23,7 +23,7 @@ Vicary, Bret P.; Brann, Thomas B.; and Griffin, Raph H.. 1984. B802: Base-Age In
 Site Index
 }
 \examples{
-vicary.site("BF",65,42,50)
+vicary.site("BF",65,42)
 }
 \author{
 Premer, M.I. - Maine Forest Lab
