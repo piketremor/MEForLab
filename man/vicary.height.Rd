@@ -23,7 +23,7 @@ Vicary, Bret P.; Brann, Thomas B.; and Griffin, Raph H.. 1984. B802: Base-Age In
 Top height
 }
 \examples{
-height("BF",65,42,50)
+vicary.height("BF",65,42)
 }
 \author{
 Premer, M.I. - Maine Forest Lab

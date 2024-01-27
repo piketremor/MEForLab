@@ -21,7 +21,7 @@ VSteinman, J.R. 1992. A comprehensive evaluation of spruce-fir growth and yield 
 Site Index
 }
 \examples{
-height(65,42)
+steinman.site(65,42)
 }
 \author{
 Premer, M.I. - Maine Forest Lab
