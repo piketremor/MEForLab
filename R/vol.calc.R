@@ -32,6 +32,7 @@ vol.calc <- function(SPP, DBH, HT){
   if(SPP=="MA"){a=-0.312; b=436.683}
   if(SPP=="UNK"){a=-0.312; b=436.683}
   if(SPP=="WS"){a=1.226; b=315.832}
+  if(SPP=="NS"){a=1.226; b=315.832}
   if(SPP=="WA"){a=-0.312; b=436.683}
   if(SPP=="BS"){a=1.226; b=315.832}
   if(SPP=="SM"){a=1.046; b=383.927}
@@ -39,6 +40,7 @@ vol.calc <- function(SPP, DBH, HT){
   if(SPP=="RP"){a=0.691; b=363.832}
   if(SPP=="AB"){a=0.959; b=334.829}
   if(SPP=="WB"){a=2.222; b=300.373}
+  if(SPP=="OS"){a=1.226; b=315.832}
   #else{a=1.112; b=350.092} #just to test
   VOL = (DBH^2)/(a+(b/HT))
   return(VOL=VOL)
