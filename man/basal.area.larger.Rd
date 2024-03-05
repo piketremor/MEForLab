@@ -22,9 +22,6 @@ Computes basal area per acre in larger trees (BAL, ft2/acre). BAL is computed by
 \details{
 BAL - a metric of tree demograhic position
 }
-\examples{
-basal.area.larger(10.2,142,complete=FALSE)
-}
 \author{
 Premer, M.I. - Maine Forest Lab
 }
