@@ -16,6 +16,5 @@ basal.area.larger <- function(uid, dbh, tpa){
   Temp <- data.frame(uid, dbh, BAT)
   Temp <- Temp[order(-dbh),]
   Temp$csum <- ave(Temp$BAT, Temp$uid, FUN=cumsum)
-  Temp$result <- (Temp$csum - BAT)
-  return(Temp$result)
+  return(Temp$csum)
 }
