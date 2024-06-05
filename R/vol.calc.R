@@ -41,6 +41,7 @@ vol.calc <- function(SPP, DBH, HT){
   if(SPP=="AB"){a=0.959; b=334.829}
   if(SPP=="WB"){a=2.222; b=300.373}
   if(SPP=="OS"){a=1.226; b=315.832}
+  if(SPP=="BT"){a=-0.312; b=436.683}
   #else{a=1.112; b=350.092} #just to test
   VOL = (DBH^2)/(a+(b/HT))
   return(VOL=VOL)
