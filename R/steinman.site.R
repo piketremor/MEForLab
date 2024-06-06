@@ -8,7 +8,7 @@
 #' steinman.site(65,42)
 #' @author Premer, M.I. - Maine Forest Lab
 #' @description
-#'  VSteinman, J.R. 1992. A comprehensive evaluation of spruce-fir growth and yield in Maine as related to physical and chemical soil properties. Ph.D. thesis, University of Maine, Orono, Maine.
+#' Steinman, J.R. 1992. A comprehensive evaluation of spruce-fir growth and yield in Maine as related to physical and chemical soil properties. Ph.D. thesis, University of Maine, Orono, Maine.
 
 
 
