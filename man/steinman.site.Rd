@@ -4,9 +4,11 @@
 \alias{steinman.site}
 \title{Estimate site index of spruce/fir using Steinman equations}
 \usage{
-steinman.site(ht, age)
+steinman.site(SPP, HT, AGE)
 }
 \arguments{
+\item{SPP}{Species Code (FVS Format)}
+
 \item{ht}{- mean top height (H40)}
 
 \item{age}{- estimated age of origin}
@@ -21,7 +23,7 @@ Steinman, J.R. 1992. A comprehensive evaluation of spruce-fir growth and yield i
 Site Index
 }
 \examples{
-steinman.site(65,42)
+steinman.site("RS",65,42)
 }
 \author{
 Premer, M.I. - Maine Forest Lab
