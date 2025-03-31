@@ -73,6 +73,11 @@ wykoff.ht <- function (SPP, DBH) {
   if (SPP == "BW") {a = 4.5820; b = -5.0903}
   if (SPP == "AE") {a = 4.6008; b = -7.2732}
   if (SPP == "HH") {a = 4.0322; b = -3.0833}
+  if (SPP == "OH") {a = 4.0322; b = -3.0833}
+  if (SPP == "OT") {a = 4.0322; b = -3.0833}
+  if (SPP == "PC") {a = 4.0322; b = -3.0833}
+  if (SPP == "ST") {a = 4.0322; b = -3.0833}
+  if (SPP == "HE") {a = 4.5084; b = -6.0116}
   HT = 4.5+exp(a+b/(DBH+1.0))
   return(HT)
 }
