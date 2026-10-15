@@ -57,3 +57,24 @@ test_that("compiled FVS runs when available", {
   r <- fvs_project(transform(tl, ht_imputed = FALSE), years = 10)
   expect_true(nrow(r$summary) >= 3)
 })
+
+test_that("read_inventory takes any data frame or file: fixed plots, common names, custom maps", {
+  fx <- data.frame(Stand = rep(c("N", "S"), each = 3), PLOT = c(1, 1, 2, 1, 2, 2),
+                   Spp = c("red spruce", "balsam fir", "eastern hemlock", "red maple",
+                           "eastern white pine", "red maple"),
+                   dbh = c(9, 6, 14, 11, 20, 8), HT = c(55, NA, 70, NA, 90, 40),
+                   CR = c(.4, .5, .45, .4, .35, .5))
+  f <- tempfile(fileext = ".csv"); utils::write.csv(fx, f, row.names = FALSE)
+  tl <- read_inventory(f, design = "fixed", plot_acres = 0.1, species_codes = "common",
+                       cols = list(stand = "stand", plot = "plot", species = "spp",
+                                   dbh = "DBH", ht = "ht", cr = "cr"))
+  expect_equal(tl$fvs, c("RS", "BF", "EH", "RM", "WP", "RM"))
+  expect_equal(unique(tl$tpa), 10 / 2)                      # 1/0.1 ac over 2 plots
+  expect_equal(tl$ht[!tl$ht_imputed], c(55, 70, 90, 40))   # measured heights kept
+  expect_equal(tl$cr, fx$CR)                                # fractions detected
+  tl2 <- read_inventory(fx, cols = list(stand = "Stand", plot = "PLOT", species = "Spp", dbh = "dbh"),
+                        species_map = c("red spruce" = "RS", "balsam fir" = "BF",
+                                        "eastern hemlock" = "EH", "red maple" = "RM",
+                                        "eastern white pine" = "WP"))
+  expect_equal(sum(0.005454154 * tl2$dbh^2 * tl2$tpa), 2 * (20 * 3 / 2))  # per stand: BAF x 3 trees / 2 points
+})

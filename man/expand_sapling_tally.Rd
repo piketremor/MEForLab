@@ -13,7 +13,8 @@ expand_sapling_tally(
   stand = "Stand_ID",
   plot = "Plot",
   species = "Species",
-  species_codes = c("tt", "fvs", "spcd"),
+  species_codes = c("tt", "fvs", "spcd", "common"),
+  species_map = NULL,
   cr_default = 0.6
 )
 }
@@ -30,15 +31,19 @@ diameter-class columns}
 (in.). Classes below 1 in. are normally left out because the growth
 equations were fit to trees >= 1 in. DBH.}
 
-\item{stand, plot, species}{column names}
+\item{stand, plot, species}{column names (case-insensitive)}
 
-\item{species_codes}{coding of `species`: "tt" (TallTimber numeric),
-"fvs" (NE alpha) or "spcd" (FIA)}
+\item{species_codes}{coding of `species`: "fvs" (NE alpha, e.g. "RS"),
+"spcd" (FIA numeric), "tt" (TallTimber numeric) or "common" (e.g.
+"red spruce"). Ignored when `species_map` is given.}
+
+\item{species_map}{optional named vector mapping your own species codes
+to FVS alpha codes, e.g. `c(RedSpr = "RS", Fir = "BF")`}
 
 \item{cr_default}{crown ratio assigned to saplings (not measured)}
 }
 \value{
-tree list in the same format as [expand_point_cruise()]
+tree list in the same format as [expand_plots()]
 }
 \description{
 Expand a fixed-radius sapling dot tally to a per-acre tree list

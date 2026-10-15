@@ -2,7 +2,7 @@
 % Please edit documentation in R/cruise.R
 \name{expand_point_cruise}
 \alias{expand_point_cruise}
-\title{Expand a variable-radius (prism) point cruise to a per-acre tree list}
+\title{Expand a prism (variable-radius) point cruise}
 \usage{
 expand_point_cruise(
   data,
@@ -13,36 +13,34 @@ expand_point_cruise(
   dbh = "DBH",
   cr = "Tree_Notes",
   reps = NULL,
-  species_codes = c("tt", "fvs", "spcd")
+  species_codes = c("tt", "fvs", "spcd", "common"),
+  species_map = NULL
 )
 }
 \arguments{
 \item{data}{data.frame, one row per tallied tree}
 
-\item{baf}{basal area factor (ft2/ac per tree)}
+\item{baf}{basal area factor (ft2/ac per tree) for prism plots}
 
 \item{stand, plot, species, dbh}{column names in `data`}
 
-\item{cr}{column holding crown ratio in percent (may contain notes after
-the number, e.g. "35 burn plot"); NULL if not recorded}
+\item{cr}{column with crown ratio, or NULL. Text after a leading number is
+ignored (e.g. "35 burn plot").}
 
-\item{reps}{column with the tally count for each record (e.g. 2 for a
-walk-through double count); NULL if every record is one tree}
+\item{reps}{column with the number of trees each record represents
+(e.g. 2 for a double count), or NULL}
 
-\item{species_codes}{coding of `species`: "tt" (TallTimber numeric),
-"fvs" (NE alpha) or "spcd" (FIA)}
-}
-\value{
-data.frame tree list with columns `stand`, `plot`, `tree`, `fvs`,
-  `spcd`, `dbh`, `cr` (0-1, NA if not recorded), `tpa`, `source`. The
-  number of points per stand is attached as attribute `n_plots`.
+\item{species_codes}{coding of `species`: "fvs" (NE alpha, e.g. "RS"),
+"spcd" (FIA numeric), "tt" (TallTimber numeric) or "common" (e.g.
+"red spruce"). Ignored when `species_map` is given.}
+
+\item{species_map}{optional named vector mapping your own species codes
+to FVS alpha codes, e.g. `c(RedSpr = "RS", Fir = "BF")`}
 }
 \description{
-Each tallied tree represents `BAF / (0.005454 * DBH^2)` trees per acre on
-its point; stand-level TPA divides by the number of points in the stand.
-Points with no tally (all stems below the prism threshold) still count as
-points, so keep their placeholder rows in `data` -- rows with a missing or
-zero species code are used for the point count and then dropped.
+Shortcut for [expand_plots()] with `design = "prism"` and the TallTimber
+column names used by UMaine cruises (`Type`, `Plot`, `Spp`, `DBH`,
+`Tree_Notes`).
 }
 \examples{
 cruise <- data.frame(Type = c("A1", "A1", "A1", "B2"), Plot = c(1, 1, 2, 3),

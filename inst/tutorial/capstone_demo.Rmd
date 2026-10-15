@@ -9,6 +9,27 @@ output:
     toc_float: true
     number_sections: true
     df_print: kable
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    number_sections: true
+    df_print: kable
+    highlight: tango
+    fig_caption: false
+    extra_dependencies: ["booktabs"]
+geometry: margin=1in
+mainfont: TeX Gyre Pagella
+monofont: DejaVu Sans Mono
+monofontoptions: "Scale=0.82"
+fontsize: 11pt
+linkcolor: blue
+urlcolor: blue
+header-includes:
+  - \usepackage{fvextra}
+  - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\}}
+  - \fvset{breaklines=true, breakanywhere=true}
+  - \usepackage{float}
+  - \floatplacement{figure}{H}
 params:
   data_dir: "G:/My Drive/Research/UMaine_Demerritt/UF_Demeritt_MgtPlan2026/2025_DBD_Inventory"
   fvs_dir: "C:/FVSbin"
@@ -17,6 +38,10 @@ params:
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(message = FALSE, warning = FALSE, fig.width = 8, fig.height = 4.5,
                       dpi = 120, comment = "#>")
+if (knitr::is_latex_output()) {
+  knitr::opts_chunk$set(dev = "cairo_pdf", fig.width = 6.5, fig.height = 3.3, out.width = "95%")
+  options(width = 80, knitr.kable.NA = "")
+}
 ```
 
 This demo walks from the raw 2025 Demeritt Forest cruise to 50-year growth
@@ -70,7 +95,8 @@ The overstory cruise is a BAF 20 prism sample of live trees ≥ 4.6 in. DBH. A
 codes, and crown ratio (in percent) was recorded in the `Tree_Notes` field.
 Heights were *not* measured.
 
-`read_demeritt_inventory()` does four things:
+`read_demeritt_inventory()` is a preset of the general reader,
+`read_inventory()` (see the box at the end of this section). It does four things:
 
 1. Expands each prism tree to trees per acre: TPA = BAF / (0.005454 · DBH²) / number of points in the stand.
 2. Expands sapling counts by the fixed-plot factor (43,560 / π·5.3² ≈ 494 TPA per stem).
@@ -83,13 +109,54 @@ trees <- read_demeritt_inventory(
   overstory = file.path(data_dir, "DBD_66_Tree_DataBAF20_StandsOK.xlsx"),
   saplings  = file.path(data_dir, "Sapling_MASTER_DBDWith2026.xlsx"))
 
-head(trees)
+trees |>
+  select(stand, plot, fvs, spcd, dbh, ht, cr, tpa, source) |>
+  head() |>
+  mutate(across(c(ht, tpa), ~ round(.x, 1)))
 table(trees$source)
 ```
 
 Every row is a *tree record*: one tallied tree (or sapling class) carrying
 the number of trees per acre it represents. That's the input format for
 every growth model in this demo.
+
+## Your own data: `read_inventory()`
+
+`read_inventory()` accepts any data frame or csv/xlsx file. You tell it four
+things:
+
+- which columns hold stand, plot, species and DBH (plus height, crown
+  ratio, a tally multiplier and stand acres, if you have them)
+- whether plots were prism points (`baf`) or fixed-area plots
+  (`plot_acres` or `plot_radius`)
+- how species are coded: FVS alpha, FIA number, TallTimber number,
+  common name, or your own codes through `species_map`
+
+Measured heights are kept and only the missing ones are imputed. Here is a
+made-up fixed-plot cruise (1/10-acre plots) with some measured heights:
+
+```{r read-generic}
+my_cruise <- data.frame(
+  Unit    = rep(c("North", "South"), each = 4),
+  PlotNo  = c(1, 1, 2, 2, 1, 1, 2, 2),
+  Species = c("red spruce", "balsam fir", "red spruce", "eastern hemlock",
+              "eastern white pine", "red maple", "eastern white pine", "northern red oak"),
+  DBH_in  = c(10.1, 7.3, 12.4, 15.0, 18.2, 8.8, 21.5, 11.0),
+  Ht_ft   = c(62, NA, 70, NA, 88, NA, NA, 64),
+  CR_pct  = c(45, 50, 40, 55, 35, 40, 30, 45))
+
+my_trees <- read_inventory(
+  my_cruise, design = "fixed", plot_acres = 1/10,
+  cols = list(stand = "Unit", plot = "PlotNo", species = "Species",
+              dbh = "DBH_in", ht = "Ht_ft", cr = "CR_pct"),
+  species_codes = "common")
+
+my_trees |> select(stand, fvs, dbh, ht, ht_imputed, cr, tpa) |> mutate(ht = round(ht, 1))
+stand_summary(my_trees) |> select(stand, tpa, ba, qmd, top_ht) |> mutate(across(where(is.numeric), ~ round(.x, 1)))
+```
+
+The output goes straight into `project_stands()`, just like the Demeritt tree
+list.
 
 > **Check your understanding.** Pick one overstory row and recompute its `tpa`
 > by hand. You'll need `attr(trees, "n_plots")` for the number of points in the stand.
@@ -327,6 +394,63 @@ stems/ac has no taller neighbours, so it barely dies and the stand grows past
 any biologically possible density. The backstop caps stand SDI at 85% of the
 species-weighted FVS-NE maximum. It is an addition to the remodeling-project
 equations, so say so whenever you report results that use it.
+
+# Side demo: merchandising stems with `Kozak_merchR()`
+
+`Kozak_merchR()` buys stems "virtually". A taper equation (Kozak 2004)
+predicts inside-bark diameter at every height. The function then finds the
+heights where the stem tapers to each product's minimum small-end diameter,
+and cuts the stem into product sections at those heights:
+
+| product | `log.grades` | small-end diameter (in.) |
+|---|---|---|
+| top, unmerchantable | `junk` | < 2 |
+| pulp | `pulp` | 2–5 |
+| chip-n-saw | `cns` | 5–7 |
+| small sawlog | `ssl` | 7–8 |
+| large sawlog | `lsl` | 8–12 |
+| peeler/premium sawlog | `psl` | ≥ 12 |
+
+Each section's Scribner board-foot volume comes from its small-end diameter
+and length. The input is a data frame with `dbh` (in.) and `tht` (total height, ft):
+
+```{r merch-basic}
+stems <- data.frame(dbh = c(10, 14, 18, 24), tht = c(60, 75, 90, 105))
+Kozak_merchR(stems) |> mutate(across(where(is.numeric), ~ round(.x, 1)))
+```
+
+`display.stems = TRUE` draws each stem's taper profile:
+
+- solid line: predicted diameter by height
+- dotted horizontal lines: product breakpoints
+- dashed vertical lines: where each break falls on the stem
+
+```{r merch-plot, fig.height = 4}
+invisible(Kozak_merchR(stems[3, ], display.stems = TRUE))
+```
+
+Product definitions are arguments, so you can match a local market:
+
+```{r merch-custom}
+Kozak_merchR(stems,
+             log.breaks = c(4, 8, 12, 51),
+             log.grades = c("pulp", "bolt", "saw", "veneer")) |>
+  mutate(across(where(is.numeric), ~ round(.x, 1)))
+```
+
+Things to know before you use it:
+
+* **The taper parameters are for coastal Douglas-fir (British Columbia),** so
+  treat Maine numbers as illustrative only. Swapping in Acadian taper
+  parameters (Li & Weiskittel 2010) is a self-contained capstone add-on.
+* **The two smallest classes come out negative.** The Scribner formula,
+  (0.79·D² − 2D − 4)·L/16, goes negative below about 3.7 in. small end, so
+  `junk` and `pulp` (and therefore `vol`) are distorted. Read pulp in cords or
+  cubic feet instead (e.g. `smalians()` over each section).
+* **Sections are continuous, not bucked to log lengths.** A product's volume
+  is one long section, not the 8- or 16-ft logs a processor would cut.
+* **Small trees are skipped.** Trees with DBH ≤ 5 in. are left at zero.
+
 
 # Known limitations
 

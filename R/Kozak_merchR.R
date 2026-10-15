@@ -127,7 +127,7 @@ Kozak_merchR <- function (x, log.breaks = c(2,5,7,8,12,51), log.grades = c( "jun
       graphics::abline(h = vol.bks$log.breaks, lty = 3)
       graphics::abline(h = 0)
       graphics::text(x = vol.bks$mh.bks + 1.5, y = vol.bks$log.breaks +
-             1, labels = paste(vol.bks$log.breaks, "@", round(vol.bks$mh.bks,
+             1, labels = paste(round(vol.bks$log.breaks, 1), "@", round(vol.bks$mh.bks,
                                                               2)))
     }
     grade.vols[s, ] <- vol.bks$sm.vol

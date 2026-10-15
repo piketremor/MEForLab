@@ -18,7 +18,7 @@ library(MEForLab)
 | competition | `hegyi.index()`, `braathe.index()`, `glover.hool.index()`, `ek.monserud.index()`, `crown.overlap()` |
 | wind | `crit.break()`, `crit.throw()` |
 | GIS | `coord.convert()`, `upslope()`, `create_layers()` |
-| inventory -> tree list | `expand_point_cruise()`, `expand_sapling_tally()`, `complete_trees()`, `read_demeritt_inventory()`, `species_lookup()` |
+| inventory -> tree list | `read_inventory()` (any data frame or csv/xlsx; prism or fixed plots), `expand_plots()`, `expand_sapling_tally()`, `complete_trees()`, `species_lookup()`; `read_demeritt_inventory()` preset |
 | growth projection | `project_stands()`, `treatment()`; engines `conus_project()` and `fvs_project()` |
 
 ## Two growth engines
@@ -34,8 +34,11 @@ library(MEForLab)
   `options(MEForLab.fvs_dir = "C:/FVSbin")`.
 
 ```r
-trees <- read_demeritt_inventory("DBD_66_Tree_DataBAF20_StandsOK.xlsx",
-                                 "Sapling_MASTER_DBDWith2026.xlsx")
+# any inventory: name your columns, say how plots were laid out
+trees <- read_inventory("my_cruise.csv", design = "fixed", plot_acres = 1/10,
+                        cols = list(stand = "Stand", plot = "Plot", species = "Spp",
+                                    dbh = "DBH", ht = "Height", cr = "CR"),
+                        species_codes = "fvs")   # or "spcd", "tt", "common", or species_map =
 thin  <- list(treatment(0, "thin_below", residual_ba = 90, min_dbh = 4.5))
 a <- project_stands(trees, "conus", years = 50, regime = thin)
 b <- project_stands(trees, "fvs",   years = 50, regime = thin)

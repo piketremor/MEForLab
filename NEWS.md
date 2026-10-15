@@ -9,10 +9,14 @@
 * Silviculture: `treatment()` / `apply_treatment()` cover thinning from
   below, thinning from above, proportional thinning and clearcut, using the
   same definitions in both engines.
-* Inventory to tree list: `expand_point_cruise()`, `expand_sapling_tally()`,
-  `complete_trees()`, `read_demeritt_inventory()`, `stand_summary()`, and a
-  species crosswalk (`meforlab_species()`, `species_lookup()`) for
-  TallTimber, FVS-NE and FIA codes.
+* Inventory to tree list: `read_inventory()` takes any data frame or
+  csv/xlsx file. It handles prism or fixed-area plots and lets you name the
+  columns (matched case-insensitively). Species can be FVS, FIA, TallTimber
+  codes, common names, or your own codes through `species_map`. It keeps
+  measured heights and fills the missing ones. Also added:
+  `expand_plots()`, `expand_sapling_tally()`, `complete_trees()`,
+  `stand_summary()`, the `read_demeritt_inventory()` preset, and a species
+  crosswalk (`meforlab_species()`, `species_lookup()`).
 * `inst/tutorial/capstone_demo.Rmd`.
 * testthat tests.
 

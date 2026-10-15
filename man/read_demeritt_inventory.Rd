@@ -7,20 +7,18 @@
 read_demeritt_inventory(overstory, saplings = NULL)
 }
 \arguments{
-\item{overstory}{path to the overstory workbook}
-
-\item{saplings}{path to the sapling workbook, or NULL to skip saplings}
+\item{overstory, saplings}{paths (or data.frames) for the two workbooks}
 }
 \value{
-complete tree list (see [complete_trees()]); attribute `n_plots`
-  gives points per stand and `stand_acres` the stand areas
+see [read_inventory()]
 }
 \description{
-Convenience wrapper for the UMaine Demeritt Forest (DBD) Inventory Project
-66 files: BAF-20 overstory points (`DBD_66_Tree_DataBAF20_StandsOK.xlsx`)
-and the nested 5.3-ft radius sapling plots
-(`Sapling_MASTER_DBDWith2026.xlsx`). Crown ratio (percent) is in the
-`Tree_Notes` field; species are TallTimber numeric codes.
+[read_inventory()] preset for the UMaine Demeritt Forest (DBD)
+Inventory Project 66 files: BAF-20 overstory points
+(`DBD_66_Tree_DataBAF20_StandsOK.xlsx`) and nested 5.3-ft radius sapling
+plots (`Sapling_MASTER_DBDWith2026.xlsx`). Species are TallTimber codes and
+crown ratio (percent) is in `Tree_Notes`. Use it as a template for other
+TallTimber-style cruises.
 }
 \examples{
 \dontrun{
