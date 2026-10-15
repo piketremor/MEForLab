@@ -7,7 +7,11 @@
 create_layers(dem, fill.sinks = TRUE, deg = 0.1)
 }
 \arguments{
-\item{dem}{digital elevation model in .tif format}
+\item{dem}{digital elevation model (RasterLayer, projected)}
+
+\item{fill.sinks}{fill sinks before computing flow (topmodel::sinkfill)}
+
+\item{deg}{minimum slope (degrees) used by sink filling}
 }
 \value{
 Filled Sinks DEM, Upslope Area, TWI
@@ -16,7 +20,9 @@ Filled Sinks DEM, Upslope Area, TWI
 Customized forestry and GIS functions
 }
 \examples{
+\dontrun{
 create_layers(dem)
+}
 }
 \author{
 Premer, M.I. - Maine Forest Lab - originally a function of topmodel

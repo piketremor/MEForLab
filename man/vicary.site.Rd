@@ -7,23 +7,26 @@
 vicary.site(SPP, ht, age)
 }
 \arguments{
-\item{SPP}{- Species, either "BF", or "RS"}
+\item{SPP}{Species, either "BF" or "RS" (vectorised)}
 
-\item{ht}{- mean top height (H40/H100)}
+\item{ht}{Mean top height (ft)}
 
-\item{age}{- estimated age of origin}
+\item{age}{Estimated age of origin (years)}
 }
 \value{
-Estimated site index at base age 50
+Estimated site index at base age 50 (ft)
 }
 \description{
-Vicary, Bret P.; Brann, Thomas B.; and Griffin, Raph H.. 1984. B802: Base-Age Invariant Polymorphic Site Index Curves for Even-Aged Spruce-Fir Stands in Maine. Maine Agricultural and Forest Experiment Station Bulletins 802. https://digitalcommons.library.umaine.edu/aes_bulletin/130
-}
-\details{
 Site Index
 }
 \examples{
-vicary.site("BF",65,42)
+vicary.site("BF", 65, 42)
+}
+\references{
+Vicary, B.P.; Brann, T.B.; Griffin, R.H. 1984. B802: Base-Age Invariant
+Polymorphic Site Index Curves for Even-Aged Spruce-Fir Stands in Maine.
+Maine Agricultural and Forest Experiment Station Bulletin 802.
+https://digitalcommons.library.umaine.edu/aes_bulletin/130
 }
 \author{
 Premer, M.I. - Maine Forest Lab

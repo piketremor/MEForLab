@@ -7,18 +7,18 @@
 relative.density.index(bapa, qmd)
 }
 \arguments{
-\item{bapa}{- basal area per acre}
+\item{bapa}{- basal area per acre (ft2/ac)}
 
-\item{tpa}{- trees per acre}
+\item{qmd}{- quadratic mean diameter (in.)}
 }
 \value{
 Relative Density Index
 }
 \description{
-RD
+Curtis' relative density, RD = BA / sqrt(QMD)
 }
 \examples{
-relative.density.index(220,11.2)
+relative.density.index(120, 8.5)
 }
 \author{
 Premer, M.I. - Maine Forest Lab

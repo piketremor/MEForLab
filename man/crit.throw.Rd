@@ -13,11 +13,9 @@ crit.throw(dbh, ht, thin_ratio, soil_depth, Species)
 
 \item{thin_ratio}{- Thinning ratio (ratio of growing space post/pre thinning)}
 
-\item{soil_depth}{- Soil depth (1 for soils < 80 cm deep, 2 for soils > 80 cm deep)}
+\item{soil_depth}{- Soil depth class: 1 for soils < 80 cm deep, 2 for soils > 80 cm deep}
 
 \item{Species}{- DF, Douglas fir; WH, western hemlock; LP, loblolly pine; SP, slash pine}
-
-\item{SPP}{Species Code (FVS Format)}
 }
 \value{
 critical speed of windthrow in mph

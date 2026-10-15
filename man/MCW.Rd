@@ -7,22 +7,27 @@
 MCW(SPP, DBH)
 }
 \arguments{
-\item{SPP}{- Species FVS Code}
+\item{SPP}{Species FVS alpha code (vectorised). Unknown codes use the
+all-species ('99') coefficients.}
 
-\item{DBH}{- Diameter at breast height}
+\item{DBH}{Diameter at breast height (in.)}
 }
 \value{
-Maximum Crown Width (ft.)
+Maximum crown width (ft.)
 }
 \description{
-MCW
+Maximum (open-grown) crown width from Russell & Weiskittel (2011). The
+equation is fit in metric units, MCW (m) = a1 * DBH(cm)^a2, so DBH is
+converted from inches and the result converted back to feet.
 }
 \examples{
-MCW("RS",8.5)
+MCW("RS", 8.5)
+MCW(c("BF", "SM"), c(10, 14))
 }
 \references{
-Russell, M. B., & Weiskittel, A. R. (2011). Maximum and Largest Crown Width Equations for 15 Tree Species in Maine.
-Northern Journal of Applied Forestry, 28(2), 84–91. https://doi.org/10.1093/njaf/28.2.84
+Russell, M. B., & Weiskittel, A. R. (2011). Maximum and Largest Crown Width
+Equations for 15 Tree Species in Maine. Northern Journal of Applied
+Forestry, 28(2), 84-91. https://doi.org/10.1093/njaf/28.2.84
 }
 \author{
 Premer, M.I. - Maine Forest Lab

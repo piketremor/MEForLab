@@ -1,0 +1,361 @@
+---
+title: "Projecting Demeritt Forest with MEForLab"
+subtitle: "A getting-started demo for the modeling-projections capstone"
+author: "Maine Forest Management Lab"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    df_print: kable
+params:
+  data_dir: "G:/My Drive/Research/UMaine_Demerritt/UF_Demeritt_MgtPlan2026/2025_DBD_Inventory"
+  fvs_dir: "C:/FVSbin"
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, fig.width = 8, fig.height = 4.5,
+                      dpi = 120, comment = "#>")
+```
+
+This demo walks from the raw 2025 Demeritt Forest cruise to 50-year growth
+projections. You'll use two growth engines and compare them. Run it
+chunk by chunk in RStudio; every chunk is meant to be read, changed, and
+re-run.
+
+**What you need**
+
+* R (≥ 4.1) and RStudio.
+* The 2025 inventory folder (`2025_DBD_Inventory`). Set `data_dir` below if
+  your copy lives somewhere else.
+* *Optional:* the USDA Forest Service FVS executables
+  (<https://www.fs.usda.gov/fvs/software/>). Section 7 needs them; everything
+  else runs without FVS.
+
+# Setup
+
+Install once:
+
+```{r install, eval = FALSE}
+install.packages(c("remotes", "readxl", "ggplot2", "dplyr", "tidyr", "RSQLite", "DBI"))
+remotes::install_github("piketremor/MEForLab")
+```
+
+Then, every session:
+
+```{r libs}
+library(MEForLab)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+data_dir <- params$data_dir
+options(MEForLab.fvs_dir = params$fvs_dir)      # where FVSne(.exe) lives, if installed
+
+theme_set(theme_minimal(base_size = 12) +
+          theme(panel.grid.minor = element_blank(),
+                legend.position = "top"))
+pal <- c("#2a78d6", "#eb6834", "#1baf7a", "#eda100")   # fixed series order
+```
+
+All package documentation is in R's help system. Try `?conus_project` or
+`help(package = "MEForLab")`.
+
+# From cruise to tree list
+
+The overstory cruise is a BAF 20 prism sample of live trees ≥ 4.6 in. DBH. A
+5.3-ft radius sapling plot is nested on each point (field instructions:
+`INV_Project_66 field Instructions.docx`). Species use TallTimber numeric
+codes, and crown ratio (in percent) was recorded in the `Tree_Notes` field.
+Heights were *not* measured.
+
+`read_demeritt_inventory()` does four things:
+
+1. Expands each prism tree to trees per acre: TPA = BAF / (0.005454 · DBH²) / number of points in the stand.
+2. Expands sapling counts by the fixed-plot factor (43,560 / π·5.3² ≈ 494 TPA per stem).
+3. Translates species codes to FVS alpha and FIA codes.
+4. Fills missing heights with the FVS-NE Wykoff equations (`wykoff.ht()`) and
+   fills the few missing crown ratios.
+
+```{r read}
+trees <- read_demeritt_inventory(
+  overstory = file.path(data_dir, "DBD_66_Tree_DataBAF20_StandsOK.xlsx"),
+  saplings  = file.path(data_dir, "Sapling_MASTER_DBDWith2026.xlsx"))
+
+head(trees)
+table(trees$source)
+```
+
+Every row is a *tree record*: one tallied tree (or sapling class) carrying
+the number of trees per acre it represents. That's the input format for
+every growth model in this demo.
+
+> **Check your understanding.** Pick one overstory row and recompute its `tpa`
+> by hand. You'll need `attr(trees, "n_plots")` for the number of points in the stand.
+
+# Describe the forest
+
+`stand_summary()` reports the standard stand metrics. Every one of them is
+also a standalone function in the package (`qmd()`, `stand.density.index()`,
+`relative.density.index()`, …).
+
+```{r summary}
+stands <- stand_summary(trees)
+stands$acres <- as.numeric(attr(trees, "stand_acres")[stands$stand])
+
+stands |>
+  arrange(desc(acres)) |>
+  select(stand, acres, tpa, ba, qmd, sdi, top_ht, vol_cuft, lead_spp, lead_share) |>
+  head(10) |>
+  mutate(across(where(is.numeric), ~ round(.x, 1)))
+```
+
+```{r forest-composition, fig.height = 4}
+trees |>
+  mutate(ba = 0.005454154 * dbh^2 * tpa,
+         acres = as.numeric(attr(trees, "stand_acres")[stand])) |>
+  group_by(fvs) |>
+  summarise(ba = sum(ba * acres) / sum(stands$acres)) |>
+  slice_max(ba, n = 10) |>
+  ggplot(aes(ba, reorder(fvs, ba))) +
+  geom_col(fill = pal[1], width = 0.7) +
+  labs(x = "Forest-wide basal area (ft²/ac)", y = NULL,
+       title = "Demeritt Forest is a white pine – hemlock – red maple forest")
+```
+
+```{r stand-scatter}
+ggplot(stands, aes(qmd, tpa, size = acres)) +
+  geom_point(colour = pal[1], alpha = 0.6) +
+  scale_y_log10() + scale_size_area(max_size = 6) +
+  labs(x = "Quadratic mean diameter (in.)", y = "Trees per acre (log scale)",
+       size = "Stand acres", title = "Stand density vs. size: 153 stands")
+```
+
+The scatter above is the raw material for a stand density management diagram.
+A good first capstone exercise is to add Reineke lines (SDI = 100, 200, …)
+with `stand.density.index()` and see where Demeritt stands sit.
+
+# Growth engine 1: the CONUS model (runs anywhere)
+
+`conus_project()` implements the **FVS Remodeling Project** equations
+(Johnson, Marshall & Weiskittel; github.com/holoros/fvs_remodeling). That
+project is refitting FVS components across the lower 48 states with a single
+set of species-level equations, one variant for everything. Each year, every
+tree record gets:
+
+| component | depends on |
+|---|---|
+| diameter growth | DBH, crown length, basal area in larger trees (BAL), elevation, extreme min. temperature |
+| height growth | height, crown ratio, crown competition in larger trees, crown closure at the tip, climate |
+| survival | crown ratio, crown closure at the tip |
+| crown recession | height growth, crown closure |
+
+The climate covariates (`elev` in ft; `emt` and `td` in °C from ClimateNA
+1991–2020 normals) default to rough values for Orono. Replacing them with
+real ClimateNA values is an early task.
+
+Start with one stand:
+
+```{r one-stand}
+one <- filter(trees, stand == "A116")
+stand_summary(one)
+
+res <- conus_project(one, years = 50)
+res$summary |> select(year, tpa, ba, qmd, sdi, top_ht, vol_cuft) |> round(1)
+```
+
+Notice basal area *drops* over the first five years. A116 starts at an SDI of
+531, above 85% of its species-weighted maximum, so the density backstop
+(Section 8) thins it by mortality before growth catches up. Compiled FVS
+does much the same thing (Section 7).
+
+Under the hood these are ordinary R functions you can call yourself. Here's
+next year's diameter growth for each tree in A116:
+
+```{r components}
+cmp <- conus_competition(one$dbh, one$ht, one$cr, one$tpa, one$fvs)
+one |>
+  mutate(bal = cmp$bal,
+         dg  = conus_dg(spcd, dbh, cr, ht, cmp$bal, elev = 150, emt = -32)) |>
+  select(fvs, dbh, ht, cr, tpa, bal, dg) |>
+  arrange(desc(dbh)) |> head(8) |> mutate(across(where(is.numeric), ~ round(.x, 3)))
+```
+
+# Silviculture: comparing regimes
+
+Treatments are defined once with `treatment()` and work in both engines. As in
+FVS, the residual-basal-area target counts only trees eligible for cutting.
+
+```{r regimes}
+regimes <- list(
+  "No action"          = list(),
+  "Thin to 90 now"     = list(treatment(0,  "thin_below", residual_ba = 90, min_dbh = 4.5)),
+  "Thin to 90, twice"  = list(treatment(0,  "thin_below", residual_ba = 90, min_dbh = 4.5),
+                              treatment(25, "thin_below", residual_ba = 90, min_dbh = 4.5)),
+  "Clearcut at 25"     = list(treatment(25, "clearcut")))
+
+case <- filter(trees, stand %in% c("A116", "K151", "R204"))
+
+runs <- bind_rows(lapply(names(regimes), function(r)
+  project_stands(case, "conus", years = 50, regime = regimes[[r]]) |>
+    mutate(regime = r)))
+```
+
+```{r regime-plot, fig.height = 5}
+runs |>
+  mutate(regime = factor(regime, names(regimes))) |>
+  ggplot(aes(year, ba, colour = regime)) +
+  geom_line(linewidth = 0.8) +
+  facet_wrap(~ stand) +
+  scale_colour_manual(values = pal) +
+  labs(x = "Years from 2025", y = "Basal area (ft²/ac)", colour = NULL,
+       title = "Basal area under four regimes (CONUS engine)",
+       subtitle = "Rows show the stand before each year's treatment")
+```
+
+Standing plus harvested volume is the yield you compare across regimes:
+
+```{r regime-table}
+runs |>
+  group_by(stand, regime) |>
+  summarise(harvested_cuft = sum(removed_vol),
+            standing_cuft_yr50 = vol_cuft[year == 50],
+            total_cuft = harvested_cuft + standing_cuft_yr50, .groups = "drop") |>
+  mutate(across(where(is.numeric), round)) |>
+  arrange(stand, desc(total_cuft))
+```
+
+> No regeneration model runs inside the CONUS engine. After a clearcut the
+> stand stays empty unless you add a regeneration tree list yourself. A
+> clearcut regime is therefore only useful for counting the harvest itself.
+
+# The whole forest
+
+Projecting all 153 stands takes about 15 seconds:
+
+```{r forest}
+forest <- project_stands(trees, "conus", years = 50)
+
+acres <- attr(trees, "stand_acres")
+forest_total <- forest |>
+  mutate(acres = as.numeric(acres[stand])) |>
+  group_by(year) |>
+  summarise(vol_mcf = sum(vol_cuft * acres) / 1000,
+            ba = weighted.mean(ba, acres))
+
+ggplot(forest_total, aes(year, vol_mcf)) +
+  geom_line(colour = pal[1], linewidth = 0.9) +
+  geom_point(colour = pal[1], size = 2) +
+  labs(x = "Years from 2025", y = "Standing volume (thousand ft³)",
+       title = "Demeritt Forest standing volume, no harvest (CONUS engine)")
+```
+
+# Growth engine 2: compiled FVS (Northeast variant)
+
+`fvs_project()` writes each stand's tree list and one keyword file, runs the
+FVS executable, and reads FVS's own summary table back from its output
+database. The returned columns match the CONUS engine's, so the two can be
+compared directly. The run folder is kept so you can open `run.key` and
+`run.out` and see exactly what FVS did. That's the best way to learn FVS
+keywords.
+
+```{r fvs-available}
+fvs_ok <- !is.na(fvs_find("ne"))
+fvs_ok
+```
+
+```{r fvs-run, eval = fvs_ok}
+fvs <- project_stands(trees, "fvs", years = 50, cycle = 5)
+
+both <- bind_rows(forest, fvs) |>
+  mutate(acres = as.numeric(acres[stand])) |>
+  group_by(engine, year) |>
+  summarise(across(c(ba, tpa, qmd, top_ht, vol_cuft), ~ weighted.mean(.x, acres)),
+            .groups = "drop")
+
+both |>
+  pivot_longer(c(ba, tpa, top_ht, vol_cuft)) |>
+  mutate(name = recode(name, ba = "Basal area (ft²/ac)", tpa = "Trees per acre",
+                       top_ht = "Top height (ft)", vol_cuft = "Total volume (ft³/ac)")) |>
+  ggplot(aes(year, value, colour = engine)) +
+  geom_line(linewidth = 0.8) +
+  facet_wrap(~ name, scales = "free_y") +
+  scale_colour_manual(values = pal) +
+  labs(x = "Years from 2025", y = NULL, colour = NULL,
+       title = "Same tree lists, two growth engines (area-weighted forest means)")
+```
+
+```{r fvs-skip, eval = !fvs_ok, echo = FALSE, results = "asis"}
+cat("*FVS was not found on this machine, so this comparison was skipped.",
+    "Install FVS and set `options(MEForLab.fvs_dir = ...)` to run it.*")
+```
+
+Both engines start from identical tree lists and heights
+(`pass_ht = "all"`). Any divergence therefore comes from the growth, mortality
+and regeneration models, not from the starting data. Figuring out *why* they
+diverge is a capstone project in itself.
+
+# Sensitivity: what drives the projection?
+
+Every model input is an assumption. Here are three to probe with the CONUS
+engine.
+
+```{r sensitivity, fig.height = 4.5}
+sens <- list(
+  "Default"                    = list(),
+  "Colder site (EMT -36 °C)"   = list(site = list(elev = 150, emt = -36, td = 29.5)),
+  "No density backstop"        = list(sdi_limit = NA),
+  "Diameter growth +20%"       = list(mult = list(dg = 1.2)))
+
+sens_runs <- bind_rows(lapply(names(sens), function(s)
+  do.call(project_stands, c(list(trees = case, engine = "conus", years = 50), sens[[s]])) |>
+    mutate(run = s)))
+
+sens_runs |>
+  mutate(run = factor(run, names(sens))) |>
+  ggplot(aes(year, ba, colour = run)) +
+  geom_line(linewidth = 0.8) +
+  facet_wrap(~ stand) +
+  scale_colour_manual(values = pal) +
+  labs(x = "Years from 2025", y = "Basal area (ft²/ac)", colour = NULL)
+```
+
+`sdi_limit` needs a note. The CONUS survival equation only knows crown ratio
+and crown closure *above* a tree. A sapling record carrying 500 identical
+stems/ac has no taller neighbours, so it barely dies and the stand grows past
+any biologically possible density. The backstop caps stand SDI at 85% of the
+species-weighted FVS-NE maximum. It is an addition to the remodeling-project
+equations, so say so whenever you report results that use it.
+
+# Known limitations
+
+* **Heights are imputed, not measured.** Every height comes from the Wykoff
+  equation. Measuring a subsample of heights next season would let you
+  calibrate it.
+* **Climate inputs are placeholders.** Pull ClimateNA 1991–2020 normals for
+  Demeritt's coordinates (`DBD_2025_INV_Points.zip`).
+* **The CONUS equations are preliminary.** They're still being refit, and
+  crown closure at the tip (CCH) is approximated here because the project's
+  crown-profile code isn't published yet.
+* **The CONUS engine has no regeneration or ingrowth.** FVS-NE adds stump
+  sprouts after cutting.
+* **Volumes come from Honer-form equations (`vol.calc()`) in the CONUS engine
+  and from NVEL in FVS.** Compare growth in basal area before you compare
+  volume.
+
+# Possible capstone questions
+
+1. **Which engine is right for Demeritt?** Use remeasured plots (CFI or FIA in
+   Penobscot County) to test both engines' 5–10-year predictions.
+2. **Thinning regimes for white pine–hemlock.** Which residual BA and entry
+   interval maximizes sawtimber volume over 50 years?
+3. **Climate sensitivity.** How much do projected yields change under a
+   warmer climate (ClimateNA future normals for `emt` and `td`)?
+4. **Height imputation.** How much do projections change when heights come
+   from a different height–diameter model? Compare `wykoff.ht()` against
+   FVS-imputed heights (`pass_ht = "measured"`).
+
+```{r session, echo = FALSE}
+sessionInfo()$otherPkgs$MEForLab$Version
+```

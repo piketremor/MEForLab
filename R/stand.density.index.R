@@ -9,6 +9,7 @@
 #' @author Premer, M.I. - Maine Forest Lab
 
 
+#' @export
 stand.density.index <- function(
     tpa,
     qmd

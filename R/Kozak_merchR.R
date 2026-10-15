@@ -1,19 +1,20 @@
-#' Virtually buck tree to logs of specified dimensions using Kozak Taper Equation,
-#' This particular set of parameters set to Douglas-fir
+#' Virtually buck trees into log products using a Kozak (2004) taper equation
 #'
-#' Log volume by product
-#' @param dbh - stem diameter at breast height (in)
-#' @param tht - total stem height (ft)
-#' @param cr - crown ratio (0-1)
-#' @param hi - height above ground
-#' @return estimated Scribner volume in each designated product class
+#' Log volume by product. The taper parameters are set for coastal Douglas-fir
+#' (BC); the function is not calibrated for Maine species.
+#'
+#' @param x data.frame with one row per tree and columns `dbh` (in.) and
+#'   `tht` (total height, ft)
+#' @param log.breaks small-end diameters (in.) separating the product classes
+#' @param log.grades product class names, one per break
+#' @param display.stems logical; plot each stem's taper and bucking points
+#' @return `x` with total Scribner volume (`vol`) and one column per product
 #' @examples
-#' merch.df(14.1,58,60,40)
+#' Kozak_merchR(data.frame(dbh = c(14.1, 18), tht = c(58, 80)))
 #' @author Premer, M.I. - Maine Forest Lab
-#' @description
-#'  Kozak, Antal. (2004). My last words on taper equations. The Forestry Chronicle. 80. 507-515. 10.5558/tfc80507-4.
-#'
-
+#' @references Kozak, A. (2004). My last words on taper equations. The
+#'   Forestry Chronicle 80: 507-515. doi:10.5558/tfc80507-4
+#' @export
 Kozak_merchR <- function (x, log.breaks = c(2,5,7,8,12,51), log.grades = c( "junk","pulp","cns","ssl", "lsl", "psl"), display.stems = FALSE)
 {
   if (!is.data.frame(x)) {
@@ -79,8 +80,8 @@ Kozak_merchR <- function (x, log.breaks = c(2,5,7,8,12,51), log.grades = c( "jun
     for (i in 1:length(log.breaks)) {
       dbh <- x[s, ]$dbh
       tht <- x[s, ]$tht
-      if (log.breaks[i] <= bcmof.diDBH(dbh, tht, cr, 0)) {
-        mh <- uniroot(merch.height.func, c(0, tht),
+      if (log.breaks[i] <= bcmof.diDBH(dbh, tht, 0.6, 0)) {
+        mh <- stats::uniroot(merch.height.func, c(0, tht),
                       dbh = dbh, tht = tht, cr = 0.6, md = log.breaks[i])
         mh.bks[i] <- mh$root
       }
@@ -98,7 +99,7 @@ Kozak_merchR <- function (x, log.breaks = c(2,5,7,8,12,51), log.grades = c( "jun
     vol.bks.null <- data.frame(log.grades, log.breaks, mh.bks)
     n.sorts <- nrow(vol.bks)
     diff.rows <- nrow(vol.bks.null) - nrow(vol.bks)
-    vol.bks <- rbind(vol.bks, tail(vol.bks.null, diff.rows))
+    vol.bks <- rbind(vol.bks, utils::tail(vol.bks.null, diff.rows))
     sed <- c(0, vol.bks[1:(n.sorts - 1), ]$log.breaks, rep(0,
                                                            diff.rows))
     led <- c(vol.bks[1:n.sorts, ]$log.breaks, rep(0, diff.rows))
@@ -121,11 +122,11 @@ Kozak_merchR <- function (x, log.breaks = c(2,5,7,8,12,51), log.grades = c( "jun
         ]$dbh, stem.tpr[i, ]$tht, stem.tpr[i, ]$cr,
         stem.tpr[i, ]$hi)
       }
-      plot(stem.tpr$dib ~ stem.tpr$hi, type = "l")
-      abline(v = vol.bks$mh.bks, lty = 2, lwd = 2)
-      abline(h = vol.bks$log.breaks, lty = 3)
-      abline(h = 0)
-      text(x = vol.bks$mh.bks + 1.5, y = vol.bks$log.breaks +
+      graphics::plot(stem.tpr$dib ~ stem.tpr$hi, type = "l")
+      graphics::abline(v = vol.bks$mh.bks, lty = 2, lwd = 2)
+      graphics::abline(h = vol.bks$log.breaks, lty = 3)
+      graphics::abline(h = 0)
+      graphics::text(x = vol.bks$mh.bks + 1.5, y = vol.bks$log.breaks +
              1, labels = paste(vol.bks$log.breaks, "@", round(vol.bks$mh.bks,
                                                               2)))
     }

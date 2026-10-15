@@ -9,6 +9,7 @@
 #' @author Premer, M.I. - Maine Forest Lab
 
 
+#' @export
 qmd <- function(ba,tpa){
   quad = sqrt(ba/tpa/0.005454)
   return(quad)

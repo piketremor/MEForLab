@@ -1,20 +1,32 @@
 #' Calculate Basal Area Larger of any given stem
 #'
 #' BAL - a metric of tree demographic position
-#' @param uid - unique identifier to the plot/stand
-#' @param dbh - tree diameter at breast height
-#' @param tpa trees per acre
-#' @return the basal area per acre in trees larger than the subject tree
-#' #' @examples
-#' basal.area.larger(uid=df$uid,dbh=df$dbh,tpa=df$tpa)
+#' @param uid Unique identifier of the plot/stand
+#' @param dbh Tree diameter at breast height (in.)
+#' @param tpa Trees per acre represented by each record
+#' @return Basal area per acre (ft2/ac) in trees strictly larger than the
+#'   subject tree, in the same order as the input.
+#' @examples
+#' df <- data.frame(uid = c(1, 1, 1, 2), dbh = c(6, 10, 14, 8), tpa = c(100, 50, 20, 80))
+#' basal.area.larger(df$uid, df$dbh, df$tpa)
 #' @author Premer, M.I. - Maine Forest Lab
-#' @description Computes basal area per acre in larger trees (BAL, ft2/acre). BAL is computed by aggregating the unique DBH values and computing the sum of BA within each class (not a percentile).  The basal area above each unique DBH class, from smallest to largest is calculated.  The largest tree by DBH in a given stand will have a BAL = 0 while the smallest tree has BAL equal to the stand basal area minus the given trees BA. BAL is a distance independent competition index.  BAL is widely used in individual tree growth and yield equations.  One big limitation of this index is that each tree is assumed to have the same competitive effect, without respective to species and there is no differentiation for stand structure (the same goes for many stand level models, which project basal area).  It should be noted that there are different ways of computing BAL.  Schroder and van Gadow (1999) suggested taking Stages (1973) percentile in BA dist' and dividing it by relative spacing (see relative.spacing function), to form an index of competition.
-
-basal.area.larger <- function(uid, dbh, tpa){
-  ba <- dbh^2*.0005454
-  BAT <- ba * tpa
-  Temp <- data.frame(uid, dbh, BAT)
-  Temp <- Temp[order(dbh),]
-  Temp$csum <- ave(Temp$BAT, Temp$uid, FUN=cumsum)
-  return(Temp$csum)
+#' @description Computes basal area per acre in larger trees (BAL, ft2/acre).
+#'   The largest tree in a stand has BAL = 0, and the smallest has BAL equal to
+#'   stand basal area minus the basal area of its own size class (trees of
+#'   equal DBH are not counted as larger than each other). BAL is a
+#'   distance-independent competition index widely used in individual-tree
+#'   growth and yield equations. Its main limitation is that every tree is
+#'   assumed to have the same competitive effect regardless of species or
+#'   stand structure. Schroder and von Gadow (1999) suggested combining Stage's
+#'   (1973) BA percentile with relative spacing (see [relative.spacing()]) to
+#'   form a related index.
+#' @export
+basal.area.larger <- function(uid, dbh, tpa) {
+  bat <- 0.005454154 * dbh^2 * tpa
+  out <- numeric(length(dbh))
+  for (g in split(seq_along(dbh), uid)) {
+    d <- dbh[g]; b <- bat[g]
+    out[g] <- vapply(d, function(x) sum(b[d > x]), numeric(1))
+  }
+  out
 }

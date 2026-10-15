@@ -1,0 +1,33 @@
+tt_code,fvs,spcd,common,scientific,softwood,sdimax_ne
+1,WP,129,eastern white pine,Pinus strobus,TRUE,529
+2,EH,261,eastern hemlock,Tsuga canadensis,TRUE,510
+3,RS,97,red spruce,Picea rubens,TRUE,506
+4,BF,12,balsam fir,Abies balsamea,TRUE,655
+5,RN,125,red pine,Pinus resinosa,TRUE,505
+6,WC,241,northern white-cedar,Thuja occidentalis,TRUE,771
+7,SM,318,sugar maple,Acer saccharum,FALSE,371
+8,RM,316,red maple,Acer rubrum,FALSE,421
+9,PB,375,paper birch,Betula papyrifera,FALSE,466
+10,YB,371,yellow birch,Betula alleghaniensis,FALSE,369
+11,AB,531,American beech,Fagus grandifolia,FALSE,364
+12,RO,833,northern red oak,Quercus rubra,FALSE,414
+13,WO,802,white oak,Quercus alba,FALSE,361
+14,WA,541,white ash,Fraxinus americana,FALSE,408
+15,QA,746,quaking aspen,Populus tremuloides,FALSE,562
+16,BC,762,black cherry,Prunus serotina,FALSE,384
+17,BW,951,American basswood,Tilia americana,FALSE,526
+18,TA,71,tamarack,Larix laricina,TRUE,387
+19,OH,998,other hardwood,,FALSE,257
+20,OS,299,other softwood,,TRUE,354
+23,BK,901,black locust,Robinia pseudoacacia,FALSE,343
+29,NS,91,Norway spruce,Picea abies,TRUE,412
+36,BA,543,black ash,Fraxinus nigra,FALSE,423
+37,BS,95,black spruce,Picea mariana,TRUE,500
+38,WS,94,white spruce,Picea glauca,TRUE,412
+39,BN,601,butternut,Juglans cinerea,FALSE,283
+40,AE,972,American elm,Ulmus americana,FALSE,282
+41,BP,741,balsam poplar,Populus balsamifera,FALSE,384
+42,HH,701,eastern hophornbeam,Ostrya virginiana,FALSE,304
+48,SV,317,silver maple,Acer saccharinum,FALSE,590
+51,BR,823,bur oak,Quercus macrocarpa,FALSE,423
+61,JP,105,jack pine,Pinus banksiana,TRUE,356

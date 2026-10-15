@@ -4,34 +4,32 @@
 \alias{coord.convert}
 \title{Coordinate conversion between UTM and lat/long}
 \usage{
-coord.convert(x, y, proj, zone)
+coord.convert(x, y, proj = c("UTM", "longlat"), zone)
 }
 \arguments{
-\item{x}{x coordinate: UTM X or longitude}
+\item{x}{x coordinate: UTM easting or longitude}
 
-\item{y}{y coodinate: UTM Y or latitude}
+\item{y}{y coordinate: UTM northing or latitude}
 
-\item{proj}{projection of the input coordinate system: c("UTM", "longlat")}
+\item{proj}{Projection of the *input*: "UTM" or "longlat"}
 
-\item{zone}{UTM zone of the input coordinate system or requested output: c(1:60)}
+\item{zone}{UTM zone of the input (or of the requested output), 1-60.
+Northern hemisphere is assumed.}
 }
 \value{
-This function returns a coordinate pair in UTM of longlat projections, opposite of the input.
+data.frame with ID, X and Y in the other coordinate system
 }
 \description{
-Convert between UTM coordinates to latitude and longitude or from latitude and longitude to UTM coordinates.
-Coordinates will convert to UTM if "longlat" is supplied as input projection and latitude longitude if "UTM" is
-supplied as the input projection.
+Convert UTM (WGS84) coordinates to longitude/latitude, or the reverse. Uses
+the `sf` package (rgdal, used by earlier versions, has been retired from
+CRAN).
 }
 \examples{
-# Input coordinates in UTM zone 10, converting to long and lat
-     # Seattle, WA
-coord.convert(x = 550202.40, y = 5272749.67, proj = "UTM", zone = 10)
-
-# Input coordinates in long and lat, converting to UTM zone 17
-     # Orlando, FL
-coord.convert(x = -81.379237, y =  28.538335, proj = "longlat", zone = 17)
-
+\dontrun{
+# Orono, ME (UTM zone 19N) to long/lat
+coord.convert(x = 520000, y = 4970000, proj = "UTM", zone = 19)
+coord.convert(x = -68.67, y = 44.88, proj = "longlat", zone = 19)
+}
 }
 \author{
 Premer, M.I. - originally developed by Stephanie Patton

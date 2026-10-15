@@ -1,21 +1,26 @@
 #' Calculate Maximum Crown Width
 #'
-#' MCW
-#' @param SPP - Species FVS Code
-#' @param DBH - Diameter at breast height
-#' @return Maximum Crown Width (ft.)
+#' Maximum (open-grown) crown width from Russell & Weiskittel (2011). The
+#' equation is fit in metric units, MCW (m) = a1 * DBH(cm)^a2, so DBH is
+#' converted from inches and the result converted back to feet.
+#'
+#' @param SPP Species FVS alpha code (vectorised). Unknown codes use the
+#'   all-species ('99') coefficients.
+#' @param DBH Diameter at breast height (in.)
+#' @return Maximum crown width (ft.)
 #' @examples
-#' MCW("RS",8.5)
+#' MCW("RS", 8.5)
+#' MCW(c("BF", "SM"), c(10, 14))
 #' @author Premer, M.I. - Maine Forest Lab
-#'@references
-#'Russell, M. B., & Weiskittel, A. R. (2011). Maximum and Largest Crown Width Equations for 15 Tree Species in Maine.
-#'Northern Journal of Applied Forestry, 28(2), 84–91. https://doi.org/10.1093/njaf/28.2.84
-
-MCW <- function(SPP,DBH)
-{
-  SPcodes=c('BF','BS','EH','WP','NC','RS','WS','AB','GB','RB','RO','PB','QA',
-            'RM','SM','YB','OH','OS','99')
-  coefs = matrix(c(
+#' @references
+#' Russell, M. B., & Weiskittel, A. R. (2011). Maximum and Largest Crown Width
+#' Equations for 15 Tree Species in Maine. Northern Journal of Applied
+#' Forestry, 28(2), 84-91. https://doi.org/10.1093/njaf/28.2.84
+#' @export
+MCW <- function(SPP, DBH) {
+  SPcodes <- c('BF','BS','EH','WP','NC','RS','WS','AB','GB','RB','RO','PB','QA',
+               'RM','SM','YB','OH','OS','99')
+  coefs <- matrix(c(
     # a1           a2
     1.37       , 0.572      ,    # BF
     0.535      , 0.742      ,    # BS
@@ -36,10 +41,9 @@ MCW <- function(SPP,DBH)
     4.04       , 0.308      ,    # OH
     1.597128571, 0.513957143,    # OS
     2.24262    , 0.462653333),   # 99
-    ncol=2,byrow=TRUE)
-  sprow = match(SPP,SPcodes)
-  sprow[is.na(sprow)] = length(SPcodes)
-  X <- coefs[sprow,1]*(DBH*0.3937)*coefs[sprow,2]
-  ft = X*3.28
-  return(ft)
+    ncol = 2, byrow = TRUE)
+  sprow <- match(SPP, SPcodes)
+  sprow[is.na(sprow)] <- length(SPcodes)
+  mcw_m <- coefs[sprow, 1] * (DBH * 2.54)^coefs[sprow, 2]
+  mcw_m * 3.28084
 }

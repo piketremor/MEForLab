@@ -15,10 +15,10 @@ relative.spacing(tpa, domht)
 Relative Spacing
 }
 \description{
-SDI
+Relative spacing
 }
 \examples{
-relative.spacing(310,8.5)
+relative.spacing(310, 55)
 }
 \author{
 Premer, M.I. - Maine Forest Lab

@@ -7,20 +7,23 @@
 vol.calc(SPP, DBH, HT)
 }
 \arguments{
-\item{SPP}{Species Code (FVS Format)}
+\item{SPP}{Species code (FVS alpha; vectorised)}
 
-\item{DBH}{Diameter at breast height (inches)}
+\item{DBH}{Diameter at breast height (in.)}
 
-\item{HT}{Total Tree Height}
+\item{HT}{Total tree height (ft)}
 }
 \value{
-stem volume (ft3)
+Stem volume (ft3) per tree. Species without coefficients return NA
+  with a warning.
 }
 \description{
-This function allows you to calculate tree volume given species, dbh, and height
+Total stem cubic-foot volume from a Honer (1967)-form equation,
+VOL = DBH^2 / (a + b / HT).
 }
 \examples{
-vol.calc("BF",14.1,68)
+vol.calc("BF", 14.1, 68)
+vol.calc(c("BF", "RS", "SM"), c(10, 12, 14), c(55, 60, 70))
 }
 \author{
 Premer, M.I. - Maine Forest Lab

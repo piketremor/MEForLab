@@ -2,8 +2,7 @@
 % Please edit documentation in R/Kozak_merchR.R
 \name{Kozak_merchR}
 \alias{Kozak_merchR}
-\title{Virtually buck tree to logs of specified dimensions using Kozak Taper Equation,
-This particular set of parameters set to Douglas-fir}
+\title{Virtually buck trees into log products using a Kozak (2004) taper equation}
 \usage{
 Kozak_merchR(
   x,
@@ -13,25 +12,28 @@ Kozak_merchR(
 )
 }
 \arguments{
-\item{dbh}{- stem diameter at breast height (in)}
+\item{x}{data.frame with one row per tree and columns `dbh` (in.) and
+`tht` (total height, ft)}
 
-\item{tht}{- total stem height (ft)}
+\item{log.breaks}{small-end diameters (in.) separating the product classes}
 
-\item{cr}{- crown ratio (0-1)}
+\item{log.grades}{product class names, one per break}
 
-\item{hi}{- height above ground}
+\item{display.stems}{logical; plot each stem's taper and bucking points}
 }
 \value{
-estimated Scribner volume in each designated product class
+`x` with total Scribner volume (`vol`) and one column per product
 }
 \description{
-Kozak, Antal. (2004). My last words on taper equations. The Forestry Chronicle. 80. 507-515. 10.5558/tfc80507-4.
-}
-\details{
-Log volume by product
+Log volume by product. The taper parameters are set for coastal Douglas-fir
+(BC); the function is not calibrated for Maine species.
 }
 \examples{
-merch.df(14.1,58,60,40)
+Kozak_merchR(data.frame(dbh = c(14.1, 18), tht = c(58, 80)))
+}
+\references{
+Kozak, A. (2004). My last words on taper equations. The
+  Forestry Chronicle 80: 507-515. doi:10.5558/tfc80507-4
 }
 \author{
 Premer, M.I. - Maine Forest Lab

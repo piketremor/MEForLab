@@ -14,7 +14,7 @@ ek.monserud.index(
 )
 }
 \arguments{
-\item{overlap}{- overlap (ft2) of the focal and competitor tree}
+\item{overlap}{- overlap (ft2) of the focal and competitor tree crowns}
 
 \item{heightj}{- height (ft) of competitor tree}
 
@@ -24,7 +24,7 @@ ek.monserud.index(
 
 \item{heighti}{- height (ft) of focal tree}
 
-\item{MCW}{- maximum crown width (ft)}
+\item{focal_area}{- crown area (ft2) of the focal tree}
 }
 \value{
 Ek and Monserud Index

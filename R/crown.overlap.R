@@ -1,6 +1,6 @@
 #' Calculate the total area of crown overlap between two trees
 #'
-#' Site Index
+#' Crown overlap
 #' @param crownradi - crown radius (ft) of the competitor trees
 #' @param crownradj - crown radius (ft) of the focal/subject tree
 #' @param distance - distance (ft) between the two stems
@@ -11,6 +11,7 @@
 #' @description
 #'  The use of crown overlap is useful for calculating competition indices
 
+#' @export
 crown.overlap <- function(crownradi, # crown radius of the competitor
                           crownradj, # crown radius of the subject tree
                           distance) # distance in feet between the two stems

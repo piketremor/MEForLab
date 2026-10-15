@@ -20,7 +20,7 @@ Crown overlap (ft2)
 The use of crown overlap is useful for calculating competition indices
 }
 \details{
-Site Index
+Crown overlap
 }
 \examples{
 crown.overlap(15,24,17)

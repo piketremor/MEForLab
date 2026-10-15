@@ -1,11 +1,10 @@
 #' Calculates the critical windspeed for windthrow of an individual tree or stand reported in miles per hour
 #'
 #' Critical Tree Root-throw Windspeed
-#' @param SPP  Species Code (FVS Format)
 #' @param dbh -Diameter at breast height (in)
 #' @param ht - Total stem height (ft)
 #' @param thin_ratio - Thinning ratio (ratio of growing space post/pre thinning)
-#' @param soil_depth - Soil depth (1 for soils < 80 cm deep, 2 for soils > 80 cm deep)
+#' @param soil_depth - Soil depth class: 1 for soils < 80 cm deep, 2 for soils > 80 cm deep
 #' @param Species - DF, Douglas fir; WH, western hemlock; LP, loblolly pine; SP, slash pine
 #' @return critical speed of windthrow in mph
 #' @examples
@@ -15,6 +14,7 @@
 #' Hale, S.E., Gardiner, B., Peace, A., Nicoll, B., Taylor, P., and S. Pizzirani. Comparison and validation of three versions of a forest wind risk model. Ecological Modeling & Software.68: 27-41
 
 
+#' @export
 crit.throw <- function(dbh,ht,thin_ratio,soil_depth,Species){
   if (soil_depth=="1"&Species=="DF")
   {I=197.4} # < 80 cm depth Douglas fir

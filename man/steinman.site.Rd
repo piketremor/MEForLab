@@ -7,23 +7,25 @@
 steinman.site(SPP, HT, AGE)
 }
 \arguments{
-\item{SPP}{Species Code (FVS Format)}
+\item{SPP}{Species code, "RS" or "BF" (vectorised)}
 
-\item{ht}{- mean top height (H40)}
+\item{HT}{Mean top height (ft)}
 
-\item{age}{- estimated age of origin}
+\item{AGE}{Estimated age of origin (years)}
 }
 \value{
-Estimated site index at base age 50
+Estimated site index at base age 50 (ft)
 }
 \description{
-Steinman, J.R. 1992. A comprehensive evaluation of spruce-fir growth and yield in Maine as related to physical and chemical soil properties. Ph.D. thesis, University of Maine, Orono, Maine.
-}
-\details{
 Site Index
 }
 \examples{
-steinman.site("RS",65,42)
+steinman.site("RS", 65, 42)
+}
+\references{
+Steinman, J.R. 1992. A comprehensive evaluation of spruce-fir growth and
+yield in Maine as related to physical and chemical soil properties. Ph.D.
+thesis, University of Maine, Orono, Maine.
 }
 \author{
 Premer, M.I. - Maine Forest Lab

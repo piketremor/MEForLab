@@ -2,28 +2,46 @@
 % Please edit documentation in R/BCKozakVol.R
 \name{BCKozakVol}
 \alias{BCKozakVol}
-\title{Estimate stem volume using Kozak BC equation}
+\title{Estimate stem volume by integrating a taper function (Smalian's formula)}
 \usage{
-BCKozakVol(SPP, dbh, hgt)
+BCKozakVol(SPP, dbh, hgt, taper = NULL, sgmts = 100)
 }
 \arguments{
-\item{SPP}{- unique Species ("DF","RA","SS","WH","WC")}
+\item{SPP}{Species code (retained for when BC parameters are added)}
 
-\item{dbh}{- tree diameter at breast height (inches)}
+\item{dbh}{Tree diameter at breast height (in.)}
 
-\item{ht}{total tree height}
+\item{hgt}{Total tree height (ft)}
+
+\item{taper}{Function `(dbh, ht, h)` returning diameter (in.) at height h}
+
+\item{sgmts}{Number of segments}
 }
 \value{
-tree volume using Smalian's
-#' @examples
-BCKozakVol(SPP=df$SPP,dbh=df$dbh,ht=df$ht)
+Tree volume (ft3)
 }
 \description{
-Computes estimated tree volume using Kozak Taper Equation - Kozak, A. 1988. A variable-exponent taper equation. Can. J. For. Res. 18: 1363–1368.
-}
-\details{
 BCKozakVol - ft3 per stem
 }
+\details{
+The stem is cut into `sgmts` equal-length segments and segment volumes are
+summed with Smalian's formula.
+
+NOTE: the original version called `BCKozakTap()`, which was never added to
+the package, so it always errored. The species-specific BC Kozak (1988)
+parameters are still missing. Until they are added, pass a taper function
+through `taper`; it must take `(dbh, ht, h)` in inches/feet and return
+diameter (in.) at height `h` (ft).
+}
+\examples{
+# simple cone as a stand-in taper
+cone <- function(dbh, ht, h) pmax(dbh * (ht - h) / (ht - 4.5), 0)
+BCKozakVol("DF", 12, 70, taper = cone)
+}
+\references{
+Kozak, A. 1988. A variable-exponent taper equation. Can. J.
+  For. Res. 18: 1363-1368.
+}
 \author{
-Premer, M.I. - Maine Forest Lab - adapated from Brian Smith - UMaine
+Premer, M.I. - Maine Forest Lab - adapted from Brian Smith - UMaine
 }

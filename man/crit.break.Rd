@@ -7,16 +7,16 @@
 crit.break(dbh, ht, thin_ratio, SPP)
 }
 \arguments{
-\item{thin_ratio}{description}
+\item{dbh}{Diameter at breast height (inches)}
 
-\item{SPP}{Species Code (FVS Format) (DF - Douglas fir; WH - western hemlock; LP - loblolly pine; SP - slash pine)}
+\item{ht}{Total tree height (ft)}
 
-\item{DBH}{Diameter at breast height (inches)}
+\item{thin_ratio}{Thinning ratio (ratio of growing space post/pre thinning; 1 = unthinned)}
 
-\item{HT}{Total Tree Height}
+\item{SPP}{Species code: DF - Douglas fir; WH - western hemlock; LP - loblolly pine; SP - slash pine}
 }
 \value{
-stem volume (ft3)
+critical wind speed for stem breakage (mph)
 }
 \description{
 A tree and stand level estimator of windspeed critical to breakage reported in miles per hour
@@ -25,7 +25,7 @@ A tree and stand level estimator of windspeed critical to breakage reported in m
 A tree and stand level estimator of windspeed critical to breakage reported in miles per hour
 }
 \examples{
-vol.calc("BF",14.1,68)
+crit.break(dbh = 10, ht = 85, thin_ratio = 1, SPP = "DF")
 }
 \references{
 Hale, S.E., Gardiner, B., Peace, A., Nicoll, B., Taylor, P., and S. Pizzirani. Comparison and validation of three versions of a forest wind risk model. Ecological Modeling & Software.68: 27-41

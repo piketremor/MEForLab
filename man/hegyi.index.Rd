@@ -9,9 +9,9 @@ hegyi.index(DBH, dbhi, distance)
 \arguments{
 \item{DBH}{- DBH (inches) of the focal tree}
 
-\item{distance}{- Distance (ft.) between trees}
+\item{dbhi}{- DBH (inches) of the competitor tree}
 
-\item{dbi}{- DBH (inches) of the competitor tree}
+\item{distance}{- Distance (ft.) between trees}
 }
 \value{
 Heygi index

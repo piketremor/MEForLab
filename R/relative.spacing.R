@@ -1,14 +1,15 @@
 #' Calculate Relative Spacing
 #'
-#' SDI
+#' Relative spacing
 #' @param tpa - trees per acre
 #' @param domht - stand dominant height (ft.)
 #' @return Relative Spacing
 #' @examples
-#' relative.spacing(310,8.5)
+#' relative.spacing(310, 55)
 #' @author Premer, M.I. - Maine Forest Lab
 
 
+#' @export
 relative.spacing <- function(
     tpa,
     domht

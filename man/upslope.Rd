@@ -7,7 +7,15 @@
 upslope(dem, log = TRUE, atb = FALSE, deg = 0.12, fill.sinks = TRUE)
 }
 \arguments{
-\item{dem}{digital elevation model in .tif format}
+\item{dem}{digital elevation model (RasterLayer, projected)}
+
+\item{log}{return log(upslope area)}
+
+\item{atb}{also return the topographic wetness index layer}
+
+\item{deg}{minimum slope (degrees) used by sink filling}
+
+\item{fill.sinks}{fill sinks first (topmodel::sinkfill)}
 }
 \value{
 the total, relative upslope area of any given location in the raster matrix
@@ -19,7 +27,9 @@ Customized forestry and GIS functions
 This function allows you to calculate the upslope area for a given raster
 }
 \examples{
+\dontrun{
 upslope(dem)
+}
 }
 \author{
 Premer, M.I. - Maine Forest Lab- originally a function of topmodel

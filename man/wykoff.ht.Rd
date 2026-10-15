@@ -7,21 +7,26 @@
 wykoff.ht(SPP, DBH)
 }
 \arguments{
-\item{SPP}{- Species code from FVS NE Varaiant}
+\item{SPP}{Species code, FVS NE variant alpha code (vectorised)}
 
-\item{DBH}{- Diameter at breast height (in)}
+\item{DBH}{Diameter at breast height (in.)}
 }
 \value{
-Estimated total height
+Estimated total height (ft). Species without coefficients return
+  NA with a warning.
 }
 \description{
-Wykoff, W.R.; Crookston, N.L.; Stage, A.R. 1982. User’s guide to the Stand Prognosis Model. Gen. Tech. Rep. INT-133. Ogden, UT: U. S. Department of Agriculture, Forest Service, Intermountain Forest and Range Experiment Station. 112p.
-}
-\details{
-Tree height
+HT = 4.5 + exp(a + b / (DBH + 1)), coefficients from the FVS Northeast
+(NE) variant.
 }
 \examples{
-wykoff.ht("RS",14)
+wykoff.ht("RS", 14)
+wykoff.ht(c("RS", "BF", "SM"), c(8, 10, 12))
+}
+\references{
+Wykoff, W.R.; Crookston, N.L.; Stage, A.R. 1982. User's guide
+  to the Stand Prognosis Model. Gen. Tech. Rep. INT-133. Ogden, UT: USDA
+  Forest Service, Intermountain Forest and Range Experiment Station. 112p.
 }
 \author{
 Premer, M.I. - Maine Forest Lab

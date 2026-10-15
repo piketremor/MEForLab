@@ -1,54 +1,37 @@
 #' Calculate tree volume (ft3)
 #'
-#'This function allows you to calculate tree volume given species, dbh, and height
-#' @param SPP  Species Code (FVS Format)
-#' @param DBH Diameter at breast height (inches)
-#' @param HT Total Tree Height
-#' @return stem volume (ft3)
+#' Total stem cubic-foot volume from a Honer (1967)-form equation,
+#' VOL = DBH^2 / (a + b / HT).
+#'
+#' @param SPP Species code (FVS alpha; vectorised)
+#' @param DBH Diameter at breast height (in.)
+#' @param HT Total tree height (ft)
+#' @return Stem volume (ft3) per tree. Species without coefficients return NA
+#'   with a warning.
 #' @examples
-#' vol.calc("BF",14.1,68)
+#' vol.calc("BF", 14.1, 68)
+#' vol.calc(c("BF", "RS", "SM"), c(10, 12, 14), c(55, 60, 70))
 #' @author Premer, M.I. - Maine Forest Lab
-
-
-vol.calc <- function(SPP, DBH, HT){
-  if(SPP=="BF"){a=2.139;  b=301.634}
-  if(SPP=="EH"){a=1.112; b=350.092}
-  if(SPP=="RS"){a=1.226; b=315.832}
-  if(SPP=="TA"){a=1.226; b=315.832}
-  if(SPP=="WP"){a=0.691; b=363.832}
-  if(SPP=="WC"){a=0.691; b=363.832}
-  if(SPP=="QA"){a=-0.312; b=436.683}
-  if(SPP=="RM"){a=1.046; b=383.927}
-  if(SPP=="OT"){a=0.312; b=436.683}
-  if(SPP=="PB"){a=2.222; b=300.373}
-  if(SPP=="BC"){a=-0.312; b=436.683}
-  if(SPP=="WP"){a=0.691; b=363.832}
-  if(SPP=="GB"){a=2.222; b=300.373}
-  if(SPP=="YB"){a=2.222; b=300.373}
-  if(SPP=="ST"){a=2.222; b=300.373}
-  if(SPP=="WILLOW"){a=-0.312; b=436.683}
-  if(SPP=="PC"){a=-0.312; b=436.683}
-  if(SPP=="BA"){a=-0.312; b=436.683}
-  if(SPP=="OA"){a=-0.312; b=436.683}
-  if(SPP=="MA"){a=-0.312; b=436.683}
-  if(SPP=="UNK"){a=-0.312; b=436.683}
-  if(SPP=="WS"){a=1.440; b=342.175}
-  if(SPP=="NS"){a=1.226; b=315.832}
-  if(SPP=="WA"){a=-0.312; b=436.683}
-  if(SPP=="BS"){a=1.588; b=333.364}
-  if(SPP=="SM"){a=1.046; b=383.927}
-  if(SPP=="MM"){a=1.046; b=383.927}
-  if(SPP=="RP"){a=0.691; b=363.832}
-  if(SPP=="AB"){a=0.959; b=334.829}
-  if(SPP=="WB"){a=2.222; b=300.373}
-  if(SPP=="OS"){a=1.226; b=315.832}
-  if(SPP=="BT"){a=-0.312; b=436.683}
-  if(SPP=="RO"){a=1.512; b=336.509}
-  if(SPP=="WO"){a=1.512; b=336.509}
-  if(SPP=="HE"){a=1.112; b=350.092}
-  if(SPP=="HH"){a=1.046; b=383.927}
-  if(SPP=="BW"){a=1.046; b=383.927}
-  #else{a=1.112; b=350.092} #just to test
-  VOL = (DBH^2)/(a+(b/HT))
-  return(VOL=VOL)
+#' @export
+vol.calc <- function(SPP, DBH, HT) {
+  cf <- .vol_calc_coefs
+  i <- match(as.character(SPP), cf$SPP)
+  if (anyNA(i[!is.na(SPP)]))
+    warning("vol.calc: no coefficients for species ",
+            paste(unique(SPP[is.na(i)]), collapse = ", "), "; returning NA")
+  (DBH^2) / (cf$a[i] + (cf$b[i] / HT))
 }
+
+.vol_calc_coefs <- data.frame(
+  SPP = c("BF","EH","RS","TA","WP","WC","QA","RM","OT","PB","BC","GB","YB","ST",
+          "WILLOW","PC","BA","OA","MA","UNK","WS","NS","WA","BS","SM","MM","RP",
+          "AB","WB","OS","BT","RO","WO","HE","HH","BW"),
+  a = c(2.139,1.112,1.226,1.226,0.691,0.691,-0.312,1.046,0.312,2.222,-0.312,2.222,
+        2.222,2.222,-0.312,-0.312,-0.312,-0.312,-0.312,-0.312,1.440,1.226,-0.312,
+        1.588,1.046,1.046,0.691,0.959,2.222,1.226,-0.312,1.512,1.512,1.112,1.046,
+        1.046),
+  b = c(301.634,350.092,315.832,315.832,363.832,363.832,436.683,383.927,436.683,
+        300.373,436.683,300.373,300.373,300.373,436.683,436.683,436.683,436.683,
+        436.683,436.683,342.175,315.832,436.683,333.364,383.927,383.927,363.832,
+        334.829,300.373,315.832,436.683,336.509,336.509,350.092,383.927,383.927),
+  stringsAsFactors = FALSE)
