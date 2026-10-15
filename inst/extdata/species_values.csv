@@ -1,0 +1,44 @@
+spp,common,genus,simple,wood_type,saw_usd_mbf,pulp_usd_ton,green_kg_m3
+AB,"American beech",Fagus,Beech,HW,133,5,865
+AE,"American Elm",Ulmus,Elm,HW,0,0,892
+AS,"Ash Species",Fraxinus,Ash,HW,197,9,801
+BA,"Black Ash",Fraxinus,Ash,HW,197,0,833
+BC,"Black Cherry",Prunus,Cherry,HW,0,9,721
+BF,"Balsam Fir",Abies,Fir,SW,128,5,721
+BO,"Black Oak",Quercus,Oak,HW,265,9,881
+BP,"Balsam Poplar",Populus,Poplar,HW,98,11,641
+BS,"Black Spruce",Picea,Spruce,SW,128,5,561
+BT,"Bigtooth Aspen",Populus,Aspen,HW,98,11,689
+BW,"Basswood",Tilia,Basswood,HW,0,9,657
+EC,"Eastern Cottonwood",Populus,Cottonwood,HW,0,9,801
+EH,"Eastern Hemlock",Tsuga,Hemlock,SW,67,5,801
+GA,"Green Ash",Fraxinus,Ash,HW,197,9,833
+GB,"Gray Birch",Betula,Birch,HW,0,9,737
+HH,"Eastern Hophornbeam",Ostrya,Hophornbeam,HW,0,9,961
+JP,"Jack Pine",Pinus,Pine,SW,0,0,801
+NS,"Norway Spruce",Picea,Spruce,SW,128,5,545
+OC,"Other Cedar",Thuja,Cedar,SW,104,15,577
+OH,"Other Hardwoods",Hardwood,Hardwood,HW,0,9,801
+OS,"Other Softwoods",Softwood,Softwood,SW,0,0,673
+PB,"Paper Birch",Betula,Birch,HW,158,5,833
+PC,"Pin Cherry",Prunus,Cherry,HW,0,9,600
+PR,"Pin Cherry",Prunus,Cherry,HW,0,9,600
+QA,"Quaking Aspen",Populus,Aspen,HW,98,11,801
+RB,"River Birch",Betula,Birch,HW,0,9,913
+RM,"Red Maple",Acer,Maple,HW,157,9,801
+RP,"Red Pine",Pinus,Pine,SW,72,4,673
+RN,"Red Pine",Pinus,Pine,SW,72,4,673
+RO,"Red Oak",Quercus,Oak,HW,265,9,1025
+RS,"Red Spruce",Picea,Spruce,SW,128,5,545
+SB,"Sweet Birch",Betula,Birch,HW,198,9,1038
+SH,"Shagbark Hickory",Carya,Hickory,HW,0,9,1025
+SM,"Sugar Maple",Acer,Maple,HW,254,9,881
+ST,"Striped Maple",Acer,Maple,HW,0,9,753
+TA,"Tamarack",Larix,Larch,SW,0,0,753
+WA,"White Ash",Fraxinus,Ash,HW,197,9,801
+WC,"Northern White Cedar",Thuja,Cedar,SW,104,15,577
+WO,"White Oak",Quercus,Oak,HW,135,9,1009
+WP,"White Pine",Pinus,Pine,SW,175,3,561
+WS,"White Spruce",Picea,Spruce,SW,128,5,561
+YB,"Yellow Birch",Betula,Birch,HW,198,9,945
+99,"Other",Other,Other,HW,0,0,600

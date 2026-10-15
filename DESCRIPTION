@@ -11,7 +11,6 @@ Description: Forestry functions used at the Maine Forest Management Lab,
     Forest Vegetation Simulator variant. See maineforestlab.com.
 License: GPL-2
 Encoding: UTF-8
-LazyData: true
 Depends: R (>= 4.1)
 Imports: stats, utils, graphics
 Suggests: readxl, RSQLite, DBI, ggplot2, dplyr, tidyr, sf, raster, topmodel,

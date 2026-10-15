@@ -20,7 +20,39 @@
 * `inst/tutorial/capstone_demo.Rmd`.
 * testthat tests.
 
+* Merchandising: GreenTimbMerch (Premer; adapted from Weiskittel and Smith)
+  is now part of MEForLab.
+  - New core: `kozak_taper()`, `kozak_volume()`, `height_at_diameter()`
+    and `dob_to_dib()`. They are vectorised, take imperial or metric units,
+    and have a `region` argument: `"NE"` (Acadian/Northeast fits), `"GL"`
+    (currently the NE parameters) and `"PNW"` (coastal Douglas-fir).
+  - `merchandize_trees()` merchandises a whole tree list (current or
+    projected) into sawlog board feet, pulp and cull per acre.
+  - Product minimums live in `merch_specs()`; override them with
+    `options(MEForLab.merch_specs =)`.
+  - The original GreenTimbMerch interfaces are kept with the same arguments
+    and values: `KozakTaper()`, `KozakTreeVol()`, `DOBtoDIB()`,
+    `MerchDiam()`, `Merchandize.ASG()`, `MerchHT()`, `Stick.Cruise()`,
+    `Merchandize.Form.Risk()`, `Sawlog.Likelihood()`, `ValueEstimate()`,
+    `Genus()`, `Smalians()`. The `purrr` and `dplyr` dependencies are gone.
+  - `Kozak_merchR()` is the PNW (Douglas-fir) merchandiser. It can now use
+    the NE/GL taper via `region =` and a `spp` column.
+
 ## Fixes
+
+* GreenTimbMerch taper fixes:
+  - **Operator precedence:** `SPP == "BA"`, `"TA"` and `"NC"` were matched
+    regardless of bark, so northern white-cedar outside-bark used the
+    inside-bark fit.
+  - **White spruce inside bark** used a copy of the white pine outside-bark
+    parameters. The intended white spruce fit was unreachable and is now
+    used.
+  - **Species without parameters** now fall back to the generic hardwood or
+    softwood curve instead of the softwood inside-bark curve.
+* `Stick.Cruise()`: the first section's saw volume no longer has a small
+  rounding artefact.
+* `Kozak_merchR()`: Scribner volumes below zero (small ends under about
+  3.7 in.) are now set to 0.
 
 * `MCW()` computed `a1 * DBH(in) * a2`. It now uses the published metric form
   `a1 * DBH(cm)^a2`, converted to feet. **Results change.**

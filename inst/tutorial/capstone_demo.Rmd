@@ -395,62 +395,136 @@ any biologically possible density. The backstop caps stand SDI at 85% of the
 species-weighted FVS-NE maximum. It is an addition to the remodeling-project
 equations, so say so whenever you report results that use it.
 
-# Side demo: merchandising stems with `Kozak_merchR()`
+# Merchandising: from trees to products
 
-`Kozak_merchR()` buys stems "virtually". A taper equation (Kozak 2004)
-predicts inside-bark diameter at every height. The function then finds the
-heights where the stem tapers to each product's minimum small-end diameter,
-and cuts the stem into product sections at those heights:
+Growth models give you trees. Markets buy products: sawlogs (board feet),
+pulp (cords or tons) and cull. MEForLab merchandises stems with a **Kozak
+(2004) taper equation**, which predicts the stem diameter at any height.
+Specify the region so the right parameters are used:
 
-| product | `log.grades` | small-end diameter (in.) |
+| `region` | parameters | use for |
 |---|---|---|
-| top, unmerchantable | `junk` | < 2 |
-| pulp | `pulp` | 2–5 |
-| chip-n-saw | `cns` | 5–7 |
-| small sawlog | `ssl` | 7–8 |
-| large sawlog | `lsl` | 8–12 |
-| peeler/premium sawlog | `psl` | ≥ 12 |
+| `"NE"` | Northeast/Acadian species fits (Li & Weiskittel; MacFarlane & Weiskittel 2016; FIA refits), from GreenTimbMerch | Maine and the Northeast |
+| `"GL"` | currently the same NE parameters (no Lake States fits bundled yet) | Great Lakes |
+| `"PNW"` | coastal Douglas-fir (Kozak 2004, BC) | Pacific Northwest, `Kozak_merchR()` |
 
-Each section's Scribner board-foot volume comes from its small-end diameter
-and length. The input is a data frame with `dbh` (in.) and `tht` (total height, ft):
+## The taper
 
-```{r merch-basic}
-stems <- data.frame(dbh = c(10, 14, 18, 24), tht = c(60, 75, 90, 105))
-Kozak_merchR(stems) |> mutate(across(where(is.numeric), ~ round(.x, 1)))
+`kozak_taper()` works in inches and feet by default (`units = "metric"` for
+cm and m):
+
+```{r taper}
+h <- seq(1, 70, by = 1)
+profiles <- bind_rows(
+  data.frame(spp = "Red spruce (RS)",   h = h, d = kozak_taper(14, 75, h, "RS")),
+  data.frame(spp = "Sugar maple (SM)",  h = h, d = kozak_taper(14, 75, h, "SM")),
+  data.frame(spp = "White pine (WP)",   h = h, d = kozak_taper(14, 75, h, "WP")))
+
+ggplot(profiles, aes(h, d, colour = spp)) +
+  geom_line(linewidth = 0.9) +
+  scale_colour_manual(values = pal) +
+  labs(x = "Height on stem (ft)", y = "Diameter outside bark (in.)", colour = NULL,
+       title = "Three 14-in. x 75-ft stems, NE taper parameters")
 ```
 
-`display.stems = TRUE` draws each stem's taper profile:
+Two helpers build on it. `height_at_diameter()` finds where the stem
+reaches a given diameter (that's where a product ends). `kozak_volume()`
+integrates the taper into cubic volume:
 
-- solid line: predicted diameter by height
-- dotted horizontal lines: product breakpoints
-- dashed vertical lines: where each break falls on the stem
-
-```{r merch-plot, fig.height = 4}
-invisible(Kozak_merchR(stems[3, ], display.stems = TRUE))
+```{r taper-helpers}
+height_at_diameter(14, 75, d = c(8, 4), spp = "RS")       # 8-in sawlog top, 4-in pulp top
+kozak_volume(14, 75, "RS")                                 # total stem, ft3
+kozak_volume(14, 75, "RS", stump = 1, top_d = 4)           # merchantable to a 4-in top
 ```
 
-Product definitions are arguments, so you can match a local market:
+## Product rules: `merch_specs()`
 
-```{r merch-custom}
-Kozak_merchR(stems,
-             log.breaks = c(4, 8, 12, 51),
-             log.grades = c("pulp", "bolt", "saw", "veneer")) |>
-  mutate(across(where(is.numeric), ~ round(.x, 1)))
+Product minimums are small-end diameters, in cm, by species. 1000 means
+"never this product":
+
+```{r specs}
+merch_specs() |> filter(spp %in% c("RS", "BF", "EH", "WP", "RM", "SM", "RO")) |>
+  mutate(saw_in = round(saw_cm / 2.54, 1), pulp_in = round(pulp_cm / 2.54, 1))
 ```
 
-Things to know before you use it:
+Markets change, so override the table for your own run:
 
-* **The taper parameters are for coastal Douglas-fir (British Columbia),** so
-  treat Maine numbers as illustrative only. Swapping in Acadian taper
-  parameters (Li & Weiskittel 2010) is a self-contained capstone add-on.
-* **The two smallest classes come out negative.** The Scribner formula,
-  (0.79·D² − 2D − 4)·L/16, goes negative below about 3.7 in. small end, so
-  `junk` and `pulp` (and therefore `vol`) are distorted. Read pulp in cords or
-  cubic feet instead (e.g. `smalians()` over each section).
-* **Sections are continuous, not bucked to log lengths.** A product's volume
-  is one long section, not the 8- or 16-ft logs a processor would cut.
-* **Small trees are skipped.** Trees with DBH ≤ 5 in. are left at zero.
+```r
+my <- merch_specs()
+my$saw_cm[my$spp %in% c("RS", "BF")] <- 15.24   # spruce-fir sawlogs to a 6-in top
+options(MEForLab.merch_specs = my)
+```
 
+## A whole stand: `merchandize_trees()`
+
+`merchandize_trees()` takes the same tree list as the growth engines. Each
+tree is split into a sawlog, pulp and cull:
+
+- **Sawlog:** from a 1-ft stump to the species' sawlog top, cut into 8-ft
+  logs and scaled with the International ¼-inch rule.
+- **Pulp:** the rest of the stem, up to the pulp top.
+- **Cull:** the stump and the top.
+
+The results are expanded by TPA. By default every tree big enough for a
+sawlog is treated as acceptable growing stock (ASG), which gives an upper
+bound on sawlog volume. Pass `gs = "your_column"` to use field ASG/USG calls.
+
+```{r merch-stand}
+a116 <- filter(trees, stand == "A116")
+m_now <- merchandize_trees(a116)
+m_now$per_acre |> mutate(across(where(is.numeric), round))
+```
+
+Because projections return tree lists (`keep_trees = TRUE`), you can
+merchandise the *future* stand the same way. Here's A116 today vs. in 50
+years with no harvest:
+
+```{r merch-future}
+fut <- conus_project(a116, years = 50, keep_trees = TRUE)$trees |> filter(year == 50)
+bind_rows(now = m_now$per_acre, `in 50 yr` = merchandize_trees(fut)$per_acre, .id = "when") |>
+  select(when, saw_bf, pulp_cords, merch_cuft) |>
+  mutate(across(where(is.numeric), round))
+```
+
+## Field-based methods (GreenTimbMerch)
+
+These per-tree functions come from GreenTimbMerch. They use metric inputs
+(DBH in cm, height in m) and return volumes in m³ and board feet:
+
+| function | field data it uses |
+|---|---|
+| `Merchandize.ASG()` | acceptable/unacceptable growing stock call |
+| `MerchHT()` | measured sawlog ("stopper") height |
+| `Stick.Cruise()` | product call for each 8-ft section |
+| `Merchandize.Form.Risk()` | form and risk classes (Castle et al. 2017) |
+| `ValueEstimate()` | stumpage value from board feet and pulp volume (2019 Maine prices) |
+
+```{r merch-field}
+bind_rows(
+  Merchandize.ASG(1, 1, 1, "SM", DBH = 45, HT = 20, GS = "ASG") |>
+    select(Method, Saw.BF = Saw.BF.ASG, Saw.Vol = Saw.Vol.ASG, Pulp.Vol = Pulp.Vol.ASG),
+  MerchHT(1, 1, 1, "SM", DBH = 45, HT = 20, Stump = 0.3, Saw.Height = 7) |>
+    select(Method, Saw.BF = Saw.BF.MH, Saw.Vol = Saw.Vol.MH, Pulp.Vol = Pulp.Vol.MH),
+  Stick.Cruise(1, 1, 1, "SM", DBH = 45, HT = 20, "Saw", "Saw", "Pulp") |>
+    select(Method, Saw.BF, Saw.Vol, Pulp.Vol),
+  Merchandize.Form.Risk(1, 1, 1, "SM", DBH = 45, HT = 20, Form = 1, Risk = 1) |>
+    select(Method, Saw.BF = Saw.BF.FR, Saw.Vol = Saw.Vol.FR, Pulp.Vol = Pulp.Vol.FR))
+```
+
+The same 45-cm sugar maple yields anywhere from about 150 to 250 board feet,
+depending on which field method you trust. Comparing these methods
+against mill tallies would make a good capstone question.
+
+## Pacific Northwest: `Kozak_merchR()`
+
+`Kozak_merchR()` cuts stems into product classes using coastal Douglas-fir
+taper (`region = "PNW"`, the default), and scales each with Scribner. Use it
+for western Douglas-fir. For Maine stands use the NE tools above, or call it
+with `region = "NE"` and a species column:
+
+```{r merch-pnw}
+Kozak_merchR(data.frame(dbh = c(14, 24), tht = c(80, 120))) |> mutate(across(where(is.numeric), ~ round(.x, 1)))
+```
 
 # Known limitations
 
@@ -466,7 +540,7 @@ Things to know before you use it:
   sprouts after cutting.
 * **Volumes come from Honer-form equations (`vol.calc()`) in the CONUS engine
   and from NVEL in FVS.** Compare growth in basal area before you compare
-  volume.
+  volume, or run both through `merchandize_trees()` so they share one taper.
 
 # Possible capstone questions
 

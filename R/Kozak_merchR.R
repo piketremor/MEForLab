@@ -1,22 +1,41 @@
 #' Virtually buck trees into log products using a Kozak (2004) taper equation
 #'
-#' Log volume by product. The taper parameters are set for coastal Douglas-fir
-#' (BC); the function is not calibrated for Maine species.
+#' Splits each stem at the heights where the taper reaches each product's
+#' minimum small-end diameter and scales each section with the Scribner
+#' Decimal C rule.
+#'
+#' * `region = "PNW"` (default, the original behaviour): coastal Douglas-fir
+#'   taper (Kozak 2004, BC), whatever the species.
+#' * `region = "NE"` or `"GL"`: species-specific Northeast/Acadian taper from
+#'   GreenTimbMerch (inside bark), via [kozak_taper()]. Needs a species
+#'   column. For 8-ft log bucking, International 1/4-inch board feet and
+#'   pulp/cull splits in the Northeast, see [merchandize_trees()] and
+#'   [Merchandize.ASG()].
+#'
+#' Scribner values below zero (small ends under about 3.7 in.) are set to 0.
 #'
 #' @param x data.frame with one row per tree and columns `dbh` (in.) and
-#'   `tht` (total height, ft)
+#'   `tht` (total height, ft); plus `spp` (FVS code) for NE/GL
 #' @param log.breaks small-end diameters (in.) separating the product classes
 #' @param log.grades product class names, one per break
 #' @param display.stems logical; plot each stem's taper and bucking points
+#' @param region "PNW", "NE" or "GL"
 #' @return `x` with total Scribner volume (`vol`) and one column per product
 #' @examples
 #' Kozak_merchR(data.frame(dbh = c(14.1, 18), tht = c(58, 80)))
+#' Kozak_merchR(data.frame(dbh = c(14, 18), tht = c(70, 80), spp = c("RS", "WP")),
+#'              region = "NE")
 #' @author Premer, M.I. - Maine Forest Lab
 #' @references Kozak, A. (2004). My last words on taper equations. The
 #'   Forestry Chronicle 80: 507-515. doi:10.5558/tfc80507-4
 #' @export
-Kozak_merchR <- function (x, log.breaks = c(2,5,7,8,12,51), log.grades = c( "junk","pulp","cns","ssl", "lsl", "psl"), display.stems = FALSE)
+Kozak_merchR <- function (x, log.breaks = c(2,5,7,8,12,51), log.grades = c( "junk","pulp","cns","ssl", "lsl", "psl"), display.stems = FALSE,
+                          region = c("PNW", "NE", "GL"))
 {
+  region <- match.arg(region)
+  if (region != "PNW" && is.null(x$spp))
+    stop("region = '", region, "' needs a species column `spp` (FVS codes)")
+  cur_spp <- NA_character_
   if (!is.data.frame(x)) {
     stop("x needs to be a data.frame")
   }
@@ -24,6 +43,8 @@ Kozak_merchR <- function (x, log.breaks = c(2,5,7,8,12,51), log.grades = c( "jun
                                      length(log.grades), byrow = TRUE))
   names(grade.vols) <- log.grades
   bcmof.diDBH <- function(dbh, tht, cr, hi) {
+    if (region != "PNW")
+      return(kozak_taper(dbh, tht, hi, cur_spp, region = region, bark = "ib"))
     dbh <- dbh
     tht <- tht
     hi <- hi
@@ -67,7 +88,7 @@ Kozak_merchR <- function (x, log.breaks = c(2,5,7,8,12,51), log.grades = c( "jun
 
   scribner <- function(d,l) {
     scribner <- (0.79*d^2-2*d-4)*l/16
-    scribner
+    pmax(scribner, 0)
   }
 
   #######################
@@ -76,6 +97,7 @@ Kozak_merchR <- function (x, log.breaks = c(2,5,7,8,12,51), log.grades = c( "jun
   for (s in 1:nrow(x)) {
     if (x[s, ]$dbh <= 5)
       next
+    if (region != "PNW") cur_spp <- as.character(x$spp[s])
     mh.bks <- rep(0, length(log.breaks))
     for (i in 1:length(log.breaks)) {
       dbh <- x[s, ]$dbh

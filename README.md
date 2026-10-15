@@ -13,7 +13,8 @@ library(MEForLab)
 | area | functions |
 |---|---|
 | stand metrics | `qmd()`, `stand.density.index()`, `relative.density.index()`, `relative.spacing()`, `basal.area.larger()`, `stand_summary()` |
-| tree equations | `wykoff.ht()`, `MCW()`, `vol.calc()`, `Kozak_merchR()`, `smalians()` |
+| tree equations | `wykoff.ht()`, `MCW()`, `vol.calc()`, `smalians()` |
+| taper and merchandising | `kozak_taper()`, `kozak_volume()`, `height_at_diameter()`, `dob_to_dib()` (regions NE, GL, PNW); `merchandize_trees()`, `merch_specs()`; GreenTimbMerch functions `Merchandize.ASG()`, `MerchHT()`, `Stick.Cruise()`, `Merchandize.Form.Risk()`, `Sawlog.Likelihood()`, `ValueEstimate()`, `KozakTaper()`, `KozakTreeVol()`, `DOBtoDIB()`, `MerchDiam()`, `Genus()`; `Kozak_merchR()` (PNW Douglas-fir) |
 | site index | `vicary.site()`, `vicary.height()`, `steinman.site()` |
 | competition | `hegyi.index()`, `braathe.index()`, `glover.hool.index()`, `ek.monserud.index()`, `crown.overlap()` |
 | wind | `crit.break()`, `crit.throw()` |

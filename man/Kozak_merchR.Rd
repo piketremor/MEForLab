@@ -8,28 +8,45 @@ Kozak_merchR(
   x,
   log.breaks = c(2, 5, 7, 8, 12, 51),
   log.grades = c("junk", "pulp", "cns", "ssl", "lsl", "psl"),
-  display.stems = FALSE
+  display.stems = FALSE,
+  region = c("PNW", "NE", "GL")
 )
 }
 \arguments{
 \item{x}{data.frame with one row per tree and columns `dbh` (in.) and
-`tht` (total height, ft)}
+`tht` (total height, ft); plus `spp` (FVS code) for NE/GL}
 
 \item{log.breaks}{small-end diameters (in.) separating the product classes}
 
 \item{log.grades}{product class names, one per break}
 
 \item{display.stems}{logical; plot each stem's taper and bucking points}
+
+\item{region}{"PNW", "NE" or "GL"}
 }
 \value{
 `x` with total Scribner volume (`vol`) and one column per product
 }
 \description{
-Log volume by product. The taper parameters are set for coastal Douglas-fir
-(BC); the function is not calibrated for Maine species.
+Splits each stem at the heights where the taper reaches each product's
+minimum small-end diameter and scales each section with the Scribner
+Decimal C rule.
+}
+\details{
+* `region = "PNW"` (default, the original behaviour): coastal Douglas-fir
+  taper (Kozak 2004, BC), whatever the species.
+* `region = "NE"` or `"GL"`: species-specific Northeast/Acadian taper from
+  GreenTimbMerch (inside bark), via [kozak_taper()]. Needs a species
+  column. For 8-ft log bucking, International 1/4-inch board feet and
+  pulp/cull splits in the Northeast, see [merchandize_trees()] and
+  [Merchandize.ASG()].
+
+Scribner values below zero (small ends under about 3.7 in.) are set to 0.
 }
 \examples{
 Kozak_merchR(data.frame(dbh = c(14.1, 18), tht = c(58, 80)))
+Kozak_merchR(data.frame(dbh = c(14, 18), tht = c(70, 80), spp = c("RS", "WP")),
+             region = "NE")
 }
 \references{
 Kozak, A. (2004). My last words on taper equations. The
