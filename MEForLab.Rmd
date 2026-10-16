@@ -1,0 +1,644 @@
+---
+title: "MEForLab: a user's guide"
+subtitle: "Forest measurements, growth projection, and merchandising in R"
+author: "Maine Forest Management Lab, University of Maine"
+date: "`r format(Sys.Date(), '%B %Y')`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    number_sections: true
+vignette: >
+  %\VignetteIndexEntry{MEForLab: a user's guide}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4,
+                      out.width = "100%", dpi = 110)
+has_gg  <- requireNamespace("ggplot2", quietly = TRUE)
+has_sf  <- requireNamespace("sf", quietly = TRUE)
+has_gis <- requireNamespace("raster", quietly = TRUE) && requireNamespace("topmodel", quietly = TRUE)
+has_db  <- requireNamespace("RSQLite", quietly = TRUE) && requireNamespace("DBI", quietly = TRUE)
+r1 <- function(x) { if (is.numeric(x)) return(round(x, 1)); x[] <- lapply(x, function(v) if (is.numeric(v)) round(v, 1) else v); x }
+```
+
+MEForLab is the Maine Forest Management Lab's R package. It covers the
+everyday arithmetic of forest measurement (stand density, site index,
+competition, volume, crown width, wind risk) and the steps from field
+data to decisions:
+
+```
+inventory  ->  tree list  ->  growth projection  ->  silviculture  ->  products & value
+read_inventory()   project_stands()   treatment()   merchandize_trees()
+```
+
+This guide walks through **every exported function** with a working
+example. Everything runs on the package's built-in example data, so you can
+copy any chunk into your own session.
+
+# Getting started
+
+```r
+# install.packages("remotes")
+remotes::install_github("piketremor/MEForLab")
+```
+
+```{r load}
+library(MEForLab)
+```
+
+## Conventions
+
+* **Units.** Unless a function says otherwise, inputs are imperial: DBH in
+  inches, heights in feet, basal area in ft²/ac, volume in ft³. The functions
+  ported from GreenTimbMerch (`KozakTaper()`, `Merchandize.ASG()` and the
+  others with capitalised names) keep their original **metric** interface:
+  cm, m and m³, with board feet in imperial.
+* **Species** use FVS Northeast-variant alpha codes (`"RS"` red spruce,
+  `"SM"` sugar maple, ...). `species_lookup()` translates to and from FIA and
+  TallTimber codes and common names.
+* **Crown ratio** is a fraction (0-1) in tree lists. Field data recorded in
+  percent is converted on import.
+* **Tree lists** are data frames with one row per tree record: `stand`,
+  `fvs`, `spcd`, `dbh`, `ht`, `cr`, and `tpa` (trees per acre the record
+  represents). Every growth and merchandising function reads this format.
+
+## The example data
+
+`maine_cruise` is a **synthetic** BAF-20 prism cruise of six Maine-like
+stands. `maine_saplings` is the nested 5.3-ft sapling tally. They're made
+up for teaching, not real plots.
+
+```{r data}
+head(maine_cruise)
+table(maine_cruise$Stand)
+head(maine_saplings)
+```
+
+# Species codes
+
+```{r species}
+head(meforlab_species())
+
+species_lookup(c("RS", "BF", "SM"), from = "fvs", to = "spcd")    # FIA codes
+species_lookup(c(97, 318), from = "spcd", to = "common")
+species_lookup(c(3, 4, 8), from = "tt", to = "fvs")                # TallTimber -> FVS
+species_lookup(c("WP", "RM"), from = "fvs", to = "sdimax_ne")       # FVS-NE max SDI
+
+Genus("YB")                                                        # genus, simple name, HW/SW
+```
+
+# From field data to a tree list
+
+## One call: `read_inventory()`
+
+`read_inventory()` takes a data frame or a csv/xlsx path, prism (`baf`) or
+fixed-area plots (`plot_acres` / `plot_radius`), and your own column names.
+It expands to trees per acre, adds the sapling tally, keeps measured heights
+and fills the rest:
+
+```{r read}
+trees <- read_inventory(
+  maine_cruise, maine_saplings,
+  design = "prism", baf = 20,
+  cols = list(stand = "Stand", plot = "Plot", species = "Species", dbh = "DBH",
+              ht = "Ht", cr = "CR", acres = "Acres"),
+  species_codes = "fvs",
+  sapling_classes = c(`1in` = 1, `2in` = 2, `3in` = 3, `4in` = 4),
+  sapling_radius = 5.3)
+
+r1(head(trees))
+table(trees$source)
+mean(trees$ht_imputed)            # share of heights that were imputed
+attr(trees, "n_plots")            # points per stand (empty points included)
+```
+
+Species can also be FIA codes (`species_codes = "spcd"`), TallTimber
+numbers (`"tt"`), common names (`"common"`), or your own codes through
+`species_map = c(RedSpr = "RS", ...)`.
+
+## The building blocks
+
+`read_inventory()` chains together four functions you can call yourself.
+
+**`expand_plots()`** handles prism or fixed plots:
+
+```{r expand-plots}
+fixed <- data.frame(Stand = "S1", Plot = c(1, 1, 2), Species = c("RS", "BF", "RM"),
+                    DBH = c(9.2, 6.1, 11.4), Height = c(55, NA, 62), CR = c(40, 50, 35))
+expand_plots(fixed, design = "fixed", plot_acres = 1/10,
+             stand = "Stand", plot = "Plot", species = "Species", dbh = "DBH",
+             ht = "Height", cr = "CR", species_codes = "fvs")
+```
+
+**`expand_point_cruise()`** is the prism shortcut with TallTimber column
+names (`Type`, `Plot`, `Spp`, `DBH`, `Tree_Notes`):
+
+```{r expand-point}
+tt <- data.frame(Type = c("A1", "A1", "A1", "B2"), Plot = c(1, 1, 2, 3),
+                 Spp = c(3, 4, 8, 0), DBH = c(10, 8, 12, 5),
+                 Tree_Notes = c("40", "35", "50 forked", "no tally"))
+r1(expand_point_cruise(tt, baf = 20))
+```
+
+**`expand_sapling_tally()`** expands a wide count table on fixed plots:
+
+```{r saplings}
+ov <- expand_plots(maine_cruise, baf = 20, stand = "Stand", plot = "Plot",
+                   species = "Species", dbh = "DBH", cr = "CR", species_codes = "fvs")
+sap <- expand_sapling_tally(maine_saplings, n_plots = attr(ov, "n_plots"), radius = 5.3,
+                            class_cols = c(`1in` = 1, `2in` = 2, `3in` = 3, `4in` = 4),
+                            stand = "Stand", plot = "Plot", species = "Species",
+                            species_codes = "fvs")
+r1(head(sap))
+```
+
+**`complete_trees()`** fills missing heights (FVS-NE Wykoff curves) and
+crown ratios (species medians):
+
+```{r complete}
+r1(complete_trees(fixed |> transform(stand = Stand, fvs = Species, dbh = DBH,
+                                     ht = Height, cr = CR / 100))[, c("fvs", "dbh", "ht", "ht_imputed", "cr")])
+```
+
+**`read_demeritt_inventory()`** is a preset for the UMaine Demeritt Forest
+2025 workbooks (TallTimber codes, BAF 20, crown ratio in `Tree_Notes`):
+
+```{r demeritt, eval = FALSE}
+dir <- "G:/My Drive/Research/UMaine_Demerritt/UF_Demeritt_MgtPlan2026/2025_DBD_Inventory"
+dbd <- read_demeritt_inventory(file.path(dir, "DBD_66_Tree_DataBAF20_StandsOK.xlsx"),
+                               file.path(dir, "Sapling_MASTER_DBDWith2026.xlsx"))
+```
+
+# Stand metrics
+
+`stand_summary()` returns the standard stand table:
+
+```{r stand-summary}
+stands <- stand_summary(trees)
+r1(stands)
+```
+
+Each metric is also its own function:
+
+```{r metrics}
+qmd(ba = 120, tpa = 310)                          # quadratic mean diameter (in.)
+stand.density.index(tpa = 310, qmd = 8.4)         # Reineke SDI
+relative.density.index(bapa = 120, qmd = 8.4)     # Curtis RD = BA / sqrt(QMD)
+relative.spacing(tpa = 310, domht = 60)           # average spacing / dominant height
+```
+
+**`basal.area.larger()`** gives basal area in larger trees (BAL), the
+distance-independent competition measure inside most growth models:
+
+```{r bal}
+sf1 <- subset(trees, stand == "SF-1" & source == "overstory")
+sf1$bal <- basal.area.larger(sf1$stand, sf1$dbh, sf1$tpa)
+r1(head(sf1[order(-sf1$dbh), c("fvs", "dbh", "tpa", "bal")]))
+```
+
+A stand density management diagram, built from the summary:
+
+```{r sdmd, eval = has_gg}
+library(ggplot2)
+q <- seq(2, 16, 0.25)
+lines <- do.call(rbind, lapply(c(100, 200, 300, 400), function(s)
+  data.frame(sdi = s, qmd = q, tpa = s / (q / 10)^1.605)))
+ggplot(stands, aes(qmd, tpa)) +
+  geom_line(data = lines, aes(group = sdi), colour = "grey70") +
+  geom_text(data = subset(lines, qmd == 16), aes(label = paste("SDI", sdi)),
+            hjust = 1, vjust = -0.4, size = 3, colour = "grey40") +
+  geom_point(colour = "#2a78d6", size = 3) +
+  geom_text(aes(label = stand), vjust = -0.9, size = 3) +
+  scale_y_log10() + scale_x_log10() +
+  labs(x = "QMD (in., log)", y = "Trees per acre (log)",
+       title = "Example stands on a Reineke diagram") +
+  theme_minimal()
+```
+
+# Tree-level equations
+
+```{r tree-eq}
+wykoff.ht(c("RS", "BF", "SM", "WP"), c(10, 8, 14, 20))   # height (ft), FVS-NE Wykoff
+MCW(c("RS", "SM"), c(10, 14))                            # max crown width (ft), Russell & Weiskittel 2011
+vol.calc(c("RS", "SM"), c(10, 14), c(60, 70))            # stem volume (ft3), Honer form
+smalians(10, 8, 16)                                      # Smalian's log volume (ft3)
+```
+
+`BCKozakVol()` integrates any taper function you give it into stem volume
+with Smalian's formula. The BC Kozak parameters it was written for aren't
+in the package yet. Here it uses a simple cone, then a regional Kozak taper
+for comparison:
+
+```{r bckozak}
+cone <- function(dbh, ht, h) pmax(dbh * (ht - h) / (ht - 4.5), 0)
+BCKozakVol("RS", 12, 70, taper = cone)
+BCKozakVol("RS", 12, 70, taper = function(dbh, ht, h) kozak_taper(dbh, ht, pmax(h, 0.01), "RS"))
+```
+
+# Site index
+
+Vicary et al. (1984) spruce-fir curves, base age 50. `vicary.site()` and
+`vicary.height()` are exact inverses:
+
+```{r site}
+si <- vicary.site("RS", ht = 55, age = 45)
+si
+vicary.height("RS", age = 45, si = si)          # back to 55 ft
+steinman.site(c("RS", "BF"), HT = c(55, 50), AGE = c(45, 40))
+```
+
+```{r site-curves, eval = has_gg}
+ages <- 10:100
+curves <- do.call(rbind, lapply(c(40, 50, 60), function(s)
+  data.frame(age = ages, si = s, ht = vicary.height("RS", ages, s))))
+ggplot(curves, aes(age, ht, colour = factor(si))) + geom_line(linewidth = 0.9) +
+  scale_colour_manual(values = c("#2a78d6", "#eb6834", "#1baf7a")) +
+  labs(x = "Age (yr)", y = "Top height (ft)", colour = "SI (base 50)",
+       title = "Red spruce site index curves (Vicary et al. 1984)") + theme_minimal()
+```
+
+# Competition indices
+
+Distance-dependent indices need a focal tree, its neighbours, and the
+distances between them:
+
+```{r competition}
+# focal 10-in red spruce, 60 ft tall; three neighbours
+nb <- data.frame(dbh = c(13, 8, 11), ht = c(66, 50, 58), dist = c(6, 9, 12))
+sum(hegyi.index(DBH = 10, dbhi = nb$dbh, distance = nb$dist))           # Hegyi
+sum(braathe.index(comp.ht = nb$ht, focal.ht = 60, distance = nb$dist))  # Braathe
+glover.hool.index(DBH = 10, qmd = 9)                                    # Glover & Hool (DBH / QMD)
+
+# crown overlap (ft2) and the Ek & Monserud index, using open-grown crown radii
+r_focal <- MCW("RS", 10) / 2; r_nb <- MCW("RS", 13) / 2
+ov <- crown.overlap(crownradi = r_nb, crownradj = r_focal, distance = 15)
+ov
+ek.monserud.index(overlap = ov, heightj = 66, crownwidthj = 2 * r_nb,
+                  crownwidthi = 2 * r_focal, heighti = 60, focal_area = pi * r_focal^2)
+```
+
+`conus_competition()` computes the three stand-level measures the growth
+model uses: BAL, crown competition factor in larger trees (CCFL), and crown
+closure at the tree tip (CCH):
+
+```{r conus-comp}
+cc <- conus_competition(sf1$dbh, sf1$ht, sf1$cr, sf1$tpa, sf1$fvs)
+r1(head(cbind(sf1[, c("fvs", "dbh", "ht")], cc)))
+```
+
+# Wind risk
+
+Critical wind speeds (mph) for stem breakage and uprooting (Hale et al.
+2015), parameterised for Douglas-fir (`"DF"`), western hemlock (`"WH"`),
+loblolly (`"LP"`) and slash pine (`"SP"`). They take one tree at a time, so
+use `mapply()` for several:
+
+```{r wind}
+crit.break(dbh = 12, ht = 90, thin_ratio = 1, SPP = "DF")
+crit.throw(dbh = 12, ht = 90, thin_ratio = 1, soil_depth = 1, Species = "DF")
+
+# effect of a thinning that opens growing space by 50%
+mapply(crit.throw, dbh = 12, ht = 90, thin_ratio = c(1, 1.5), soil_depth = 1, Species = "DF")
+```
+
+# Growth projection
+
+MEForLab has two growth engines behind one function, `project_stands()`:
+
+| engine | what it is | needs |
+|---|---|---|
+| `"conus"` | FVS Remodeling Project CONUS equations (Johnson, Marshall & Weiskittel), implemented in R | nothing |
+| `"fvs"` | compiled FVS (NE variant by default), driven through keyword files | FVS installed |
+
+## The CONUS model, piece by piece
+
+```{r conus-params}
+head(conus_params("dg"), 3)                      # diameter growth parameters by FIA species
+conus_coverage(c(97, 12, 318, 91, 998))          # which species borrow a surrogate
+```
+
+Each component is an annual equation you can call directly:
+
+```{r conus-components}
+x <- head(sf1[order(-sf1$dbh), ], 5); cx <- conus_competition(sf1$dbh, sf1$ht, sf1$cr, sf1$tpa, sf1$fvs)[order(-sf1$dbh), ][1:5, ]
+site <- list(elev = 150, emt = -32, td = 29.5)   # ft, deg C, deg C (ClimateNA normals)
+data.frame(fvs = x$fvs, dbh = x$dbh,
+           dg   = conus_dg(x$spcd, x$dbh, x$cr, x$ht, cx$bal, site$elev, site$emt),
+           hg   = conus_hg(x$spcd, x$ht, x$cr, cx$ccfl, cx$cch, site$elev, site$td, site$emt),
+           surv = conus_survival(x$spcd, x$cr, cx$cch),
+           dhtlc = conus_dhtlc(x$spcd, x$ht, x$ht * (1 - x$cr), 1, cx$cch)) |> r1()
+```
+
+## Projecting stands
+
+```{r project}
+proj <- conus_project(trees, years = 50, site = site)
+r1(subset(proj$summary, stand == "SF-1")[, c("year", "tpa", "ba", "qmd", "sdi", "sdi_max", "top_ht", "vol_cuft")])
+```
+
+```{r project-plot, eval = has_gg}
+ggplot(proj$summary, aes(year, ba, colour = stand)) + geom_line(linewidth = 0.8) +
+  labs(x = "Years", y = "Basal area (ft²/ac)", colour = NULL,
+       title = "No-harvest projections, CONUS engine") + theme_minimal()
+```
+
+Important arguments:
+
+* `site`: elevation and ClimateNA climate (`emt`, `td`). Give a data frame
+  with a `stand` column to set them per stand.
+* `sdi_limit`: a density backstop, on by default at 85% of the stand's
+  FVS-NE maximum SDI. Set it to `NA` to see the raw equations.
+* `mult`: multipliers for sensitivity analysis, e.g. `list(dg = 1.1, mort = 0.8)`.
+* `keep_trees = TRUE`: return the tree list at every reporting year.
+
+## Silviculture
+
+`treatment()` defines an entry and `apply_treatment()` applies it to one
+stand's tree list. The residual target counts only trees eligible for
+cutting, which is the FVS convention.
+
+```{r treatment}
+th <- treatment(year = 0, type = "thin_below", residual_ba = 90, min_dbh = 4.5)
+th
+wp <- subset(trees, stand == "WP-3")
+cut <- apply_treatment(wp, th)
+r1(cut$removed)                                      # BA, TPA, ft3 removed
+r1(head(cut$cut[, c("fvs", "dbh", "tpa")]))          # the trees that were cut
+c(before = sum(0.005454 * wp$dbh^2 * wp$tpa), after = sum(0.005454 * cut$trees$dbh^2 * cut$trees$tpa))
+```
+
+Regimes are lists of treatments, compared with `project_stands()`:
+
+```{r regimes}
+regimes <- list(
+  none   = list(),
+  below  = list(treatment(0, "thin_below", 90, min_dbh = 4.5)),
+  above  = list(treatment(0, "thin_above", 90, min_dbh = 4.5)),
+  prop2x = list(treatment(0, "thin_proportional", 100), treatment(25, "thin_proportional", 100)))
+runs <- do.call(rbind, lapply(names(regimes), function(r)
+  transform(project_stands(subset(trees, stand == "WP-3"), "conus", 50, regimes[[r]], site = site),
+            regime = r)))
+yield <- do.call(rbind, lapply(split(runs, runs$regime), function(d)
+  data.frame(regime = d$regime[1], harvested_cuft = sum(d$removed_vol),
+             standing_yr50 = d$vol_cuft[d$year == 50])))
+yield$total_cuft <- yield$harvested_cuft + yield$standing_yr50
+r1(yield)
+```
+
+```{r regimes-plot, eval = has_gg}
+ggplot(runs, aes(year, ba, colour = regime)) + geom_line(linewidth = 0.8) +
+  scale_colour_manual(values = c("#2a78d6", "#eb6834", "#1baf7a", "#eda100")) +
+  labs(x = "Years", y = "Basal area (ft²/ac)", colour = NULL,
+       title = "WP-3 under four regimes") + theme_minimal()
+```
+
+## Compiled FVS
+
+`fvs_find()` looks for `FVSne.exe` or `FVSne.dll` in the folder you give it,
+`options(MEForLab.fvs_dir = ...)`, the `FVS_BIN` environment variable, and the
+usual install folders:
+
+```{r fvs-find}
+fvs_find("ne")
+fvs_ok <- !is.na(fvs_find("ne")) && has_db
+```
+
+You can write FVS inputs without running FVS. That's useful for checking
+exactly what FVS will be told:
+
+```{r fvs-write}
+wd <- tempfile("fvs_"); dir.create(wd)
+fvs_write_trees(subset(trees, stand == "WP-3"), file.path(wd, "s1.tre"))
+readLines(file.path(wd, "s1.tre"), n = 3)
+fvs_write_keywords(c(`WP-3` = "s1.tre"), file.path(wd, "run.key"), inv_year = 2025,
+                   years = 50, cycle = 5, regime = regimes$below)
+cat(readLines(file.path(wd, "run.key")), sep = "\n")
+```
+
+With FVS installed, `fvs_project()` (or `project_stands(engine = "fvs")`)
+runs it and reads `FVS_Summary` back through `fvs_read_summary()`:
+
+```{r fvs-run, eval = fvs_ok}
+both <- rbind(project_stands(trees, "conus", 50, site = site)[, c("stand", "year", "engine", "ba", "tpa")],
+              project_stands(trees, "fvs", 50)[, c("stand", "year", "engine", "ba", "tpa")])
+r1(subset(both, year %in% c(0, 25, 50) & stand == "SF-1"))
+```
+
+```{r fvs-read, eval = fvs_ok}
+res <- fvs_project(subset(trees, stand == "SF-1"), years = 20)
+r1(head(fvs_read_summary(res$files$dir)))
+```
+
+```{r fvs-none, eval = !fvs_ok, echo = FALSE, results = "asis"}
+cat("> FVS was not found when this guide was built, so the two chunks above were",
+    "not run. Set `options(MEForLab.fvs_dir = \"folder with FVSne.exe or FVSne.dll\")`",
+    "to run them.\n")
+```
+
+# Taper, volume, and merchandising
+
+## Stem taper
+
+`kozak_taper()` predicts diameter anywhere on the stem (Kozak 2004). The
+`region` argument picks the parameter set:
+
+* `"NE"`: Northeast/Acadian species fits
+* `"GL"`: Great Lakes, currently the NE set
+* `"PNW"`: coastal Douglas-fir
+
+```{r taper}
+kozak_taper(dbh = 14, ht = 75, h = c(1, 17, 33, 49, 65), spp = "RS")             # outside bark (in.)
+kozak_taper(14, 75, c(1, 17, 33, 49, 65), "RS", bark = "ib")                      # inside bark
+dob_to_dib(c(10, 15), c("SM", "RS"))                                              # bark model
+head(kozak_params(), 3)
+```
+
+```{r taper-plot, eval = has_gg}
+h <- 1:74
+prof <- do.call(rbind, lapply(c("RS", "SM", "WP", "EH"), function(s)
+  data.frame(spp = s, h = h, d = kozak_taper(14, 75, h, s))))
+ggplot(prof, aes(h, d, colour = spp)) + geom_line(linewidth = 0.8) +
+  scale_colour_manual(values = c("#2a78d6", "#eb6834", "#1baf7a", "#eda100")) +
+  labs(x = "Height (ft)", y = "DOB (in.)", colour = NULL,
+       title = "Taper of four 14-in. x 75-ft stems (NE parameters)") + theme_minimal()
+```
+
+Volume and product heights come from the taper:
+
+```{r volume}
+kozak_volume(14, 75, "RS")                                # total stem ft3
+kozak_volume(14, 75, "RS", stump = 1, top_d = 4)          # merchantable to a 4-in top
+height_at_diameter(14, 75, d = c(8, 4), spp = "RS")       # where the stem reaches 8 and 4 in.
+```
+
+## Product rules
+
+```{r specs}
+head(merch_specs())                                       # minimum small-end diameters (cm)
+MerchDiam("WP")
+```
+
+Override them for a local market with
+`options(MEForLab.merch_specs = my_specs)`.
+
+## Merchandising a stand
+
+`merchandize_trees()` takes any tree list, current or projected. Each tree
+becomes sawlog (8-ft logs, International ¼-inch rule), pulp and cull, and
+the results are summed per acre:
+
+```{r merch-trees}
+m <- merchandize_trees(subset(trees, source == "overstory"))
+r1(m$per_acre)
+r1(head(m$trees[order(-m$trees$dbh), c("stand", "fvs", "dbh", "ht", "saw_bf", "saw_cuft", "pulp_cuft", "n_logs")]))
+```
+
+Merchandise a projection by keeping the tree lists:
+
+```{r merch-future}
+fut <- conus_project(subset(trees, stand == "WP-3"), 30, site = site, keep_trees = TRUE)$trees
+r1(do.call(rbind, lapply(c(0, 15, 30), function(y)
+  cbind(year = y, merchandize_trees(subset(fut, year == y))$per_acre[, c("saw_bf", "pulp_cords")]))))
+```
+
+By default every tree that reaches sawlog size is treated as acceptable
+growing stock (ASG), which gives an upper bound. Pass `gs = "column"` to use
+field ASG/USG calls.
+
+## Field-based methods (GreenTimbMerch, metric)
+
+| function | field data |
+|---|---|
+| `Merchandize.ASG()` | acceptable/unacceptable growing stock call |
+| `MerchHT()` | measured sawlog ("stopper") height |
+| `Stick.Cruise()` | product call per 8-ft section |
+| `Merchandize.Form.Risk()` | form and risk class (Castle et al. 2017) |
+
+```{r field-methods}
+rbind(
+  with(Merchandize.ASG(1, 1, 1, "SM", DBH = 45, HT = 20, GS = "ASG"),
+       data.frame(method = Method, saw_bf = Saw.BF.ASG, saw_m3 = Saw.Vol.ASG, pulp_m3 = Pulp.Vol.ASG)),
+  with(MerchHT(1, 1, 1, "SM", DBH = 45, HT = 20, Stump = 0.3, Saw.Height = 7),
+       data.frame(method = Method, saw_bf = Saw.BF.MH, saw_m3 = Saw.Vol.MH, pulp_m3 = Pulp.Vol.MH)),
+  with(Stick.Cruise(1, 1, 1, "SM", DBH = 45, HT = 20, "Saw", "Saw", "Pulp"),
+       data.frame(method = Method, saw_bf = Saw.BF, saw_m3 = Saw.Vol, pulp_m3 = Pulp.Vol)),
+  with(Merchandize.Form.Risk(1, 1, 1, "SM", DBH = 45, HT = 20, Form = 1, Risk = 1),
+       data.frame(method = Method, saw_bf = Saw.BF.FR, saw_m3 = Saw.Vol.FR, pulp_m3 = Pulp.Vol.FR))) |> r1()
+```
+
+Sawlog probability (form/risk model) and stumpage value (2019 Maine
+prices):
+
+```{r value}
+Sawlog.Likelihood("SM", DBH = 40, Form = 1, Risk = 1)
+Sawlog.Likelihood("RM", DBH = 40, Form = "PF", Risk = "HR")
+ValueEstimate(1, 1, 1, "SM", BoardFeet = 247, PulpVol = 0.14)
+```
+
+The metric GreenTimbMerch interfaces to the taper:
+
+```{r legacy}
+KozakTaper("ob", "RO", DHT = 12, DBH = 40, HT = 20)        # cm at 12 m
+KozakTreeVol("ob", "WP", DBH = 32.5, HT = 21)              # m3
+KozakTreeVol("ib", "RO", 40, 18, stump = 0.5, topD = 25.3) # m3 inside bark to a 25.3-cm top
+DOBtoDIB("SM", 25.4)                                       # cm
+Smalians(30, 25, 244)                                      # cm3 (cm diameters, cm length)
+```
+
+## Pacific Northwest: `Kozak_merchR()`
+
+For coastal Douglas-fir: cuts stems into product classes by small-end
+diameter and scales them with Scribner. `region = "NE"` or `"GL"` with a
+`spp` column uses the eastern taper instead.
+
+```{r pnw}
+r1(Kozak_merchR(data.frame(dbh = c(14, 24), tht = c(80, 120))))
+r1(Kozak_merchR(data.frame(dbh = c(14, 18), tht = c(70, 80), spp = c("RS", "WP")), region = "NE"))
+```
+
+# GIS helpers
+
+`coord.convert()` switches between UTM and longitude/latitude (needs `sf`):
+
+```{r coords, eval = has_sf}
+coord.convert(x = -68.67, y = 44.90, proj = "longlat", zone = 19)   # Orono, ME -> UTM 19N
+coord.convert(x = 526500, y = 4971400, proj = "UTM", zone = 19)
+```
+
+`upslope()` and `create_layers()` compute upslope contributing area and the
+topographic wetness index from a projected DEM. They need `raster` and
+`topmodel`; `topmodel` has been archived on CRAN, so install it from the CRAN
+archive if you need these two functions:
+
+```{r twi, eval = has_gis}
+dem <- raster::raster(nrows = 40, ncols = 40, xmn = 0, xmx = 400, ymn = 0, ymx = 400,
+                      crs = "+proj=utm +zone=19 +datum=WGS84")
+xy <- raster::xyFromCell(dem, seq_len(raster::ncell(dem)))
+raster::values(dem) <- 100 + 0.05 * xy[, 1] + 10 * sin(xy[, 2] / 60)
+up <- upslope(dem)
+layers <- create_layers(dem)
+raster::plot(layers[["twi"]], main = "Topographic wetness index")
+```
+
+```{r gis-none, eval = !has_gis, echo = FALSE, results = "asis"}
+cat("> `raster`/`topmodel` were not installed when this guide was built, so the",
+    "`upslope()` / `create_layers()` example was not run.\n")
+```
+
+# A complete workflow
+
+Inventory to tree list, a 50-year thinning comparison, then products:
+
+```{r workflow}
+# 1. inventory -> tree list (done above: `trees`)
+# 2. two regimes for every stand
+reg <- list(none = list(), thin = list(treatment(0, "thin_below", 90, min_dbh = 4.5)))
+out <- do.call(rbind, lapply(names(reg), function(r)
+  transform(project_stands(trees, "conus", 50, reg[[r]], site = site), regime = r)))
+# 3. merchandise the year-50 stands and the year-0 removals
+fut_none <- conus_project(trees, 50, site = site, keep_trees = TRUE)$trees
+fut_thin <- conus_project(trees, 50, site = site, regime = reg$thin, keep_trees = TRUE)$trees
+cut0 <- do.call(rbind, lapply(split(trees, trees$stand), function(t) apply_treatment(t, reg$thin[[1]])$cut))
+prod <- rbind(
+  data.frame(regime = "none", what = "standing yr 50", merchandize_trees(subset(fut_none, year == 50))$per_acre),
+  data.frame(regime = "thin", what = "harvested yr 0", merchandize_trees(cut0)$per_acre),
+  data.frame(regime = "thin", what = "standing yr 50", merchandize_trees(subset(fut_thin, year == 50))$per_acre))
+r1(prod[order(prod$stand), c("stand", "regime", "what", "saw_bf", "pulp_cords")])
+```
+
+# Function index
+
+```{r index, echo = FALSE}
+idx <- read.table(text = "
+area|functions
+Species|meforlab_species, species_lookup, Genus
+Inventory|read_inventory, expand_plots, expand_point_cruise, expand_sapling_tally, complete_trees, read_demeritt_inventory
+Stand metrics|stand_summary, qmd, stand.density.index, relative.density.index, relative.spacing, basal.area.larger
+Tree equations|wykoff.ht, MCW, vol.calc, smalians, BCKozakVol
+Site index|vicary.site, vicary.height, steinman.site
+Competition|hegyi.index, braathe.index, glover.hool.index, crown.overlap, ek.monserud.index, conus_competition
+Wind|crit.break, crit.throw
+Growth (CONUS)|conus_params, conus_coverage, conus_dg, conus_hg, conus_survival, conus_dhtlc, conus_project
+Growth (common)|project_stands, treatment, apply_treatment
+FVS|fvs_find, fvs_write_trees, fvs_write_keywords, fvs_project, fvs_read_summary
+Taper|kozak_taper, kozak_volume, height_at_diameter, dob_to_dib, kozak_params
+Merchandising|merch_specs, merchandize_trees, Merchandize.ASG, MerchHT, Stick.Cruise, Merchandize.Form.Risk, Sawlog.Likelihood, ValueEstimate, MerchDiam, Kozak_merchR
+GreenTimbMerch (metric)|KozakTaper, KozakTreeVol, DOBtoDIB, Smalians
+GIS|coord.convert, upslope, create_layers
+Data|maine_cruise, maine_saplings", sep = "|", header = TRUE, strip.white = TRUE)
+knitr::kable(idx)
+```
+
+# References
+
+* Castle, M., Weiskittel, A., Wagner, R., Ducey, M., Frank, J., Pelletier, G. (2017). Evaluating the influence of stem form and damage on individual-tree survival and growth. *Forest Ecology and Management*.
+* Hale, S.E., Gardiner, B., Peace, A., Nicoll, B., Taylor, P., Pizzirani, S. (2015). Comparison and validation of three versions of a forest wind risk model. *Environmental Modelling & Software* 68: 27-41.
+* Johnson, G., Marshall, D., Weiskittel, A. FVS Remodeling Project. github.com/holoros/fvs_remodeling.
+* Kozak, A. (2004). My last words on taper equations. *The Forestry Chronicle* 80: 507-515.
+* Li, R., Weiskittel, A., Dick, A.R., Kershaw, J.A., Seymour, R.S. (2012). Regional stem taper equations for eleven conifer species in the Acadian region of North America. *Northern Journal of Applied Forestry* 29: 5-14.
+* MacFarlane, D.W., Weiskittel, A.R. (2016). A new method for capturing stem taper variation for trees of diverse morphological types. *Canadian Journal of Forest Research* 46: 804-815.
+* Russell, M.B., Weiskittel, A.R. (2011). Maximum and largest crown width equations for 15 tree species in Maine. *Northern Journal of Applied Forestry* 28: 84-91.
+* Vicary, B.P., Brann, T.B., Griffin, R.H. (1984). Base-age invariant polymorphic site index curves for even-aged spruce-fir stands in Maine. MAFES Bulletin 802.
+* Wykoff, W.R., Crookston, N.L., Stage, A.R. (1982). User's guide to the Stand Prognosis Model. USDA FS GTR INT-133.
