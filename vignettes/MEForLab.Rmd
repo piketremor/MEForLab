@@ -35,7 +35,8 @@ read_inventory()   project_stands()   treatment()   merchandize_trees()
 
 This guide walks through **every exported function** with a working
 example. Everything runs on the package's built-in example data, so you can
-copy any chunk into your own session.
+copy any chunk into your own session. Five warm-up exercises with
+solutions are near the end.
 
 # Getting started
 
@@ -607,6 +608,136 @@ prod <- rbind(
   data.frame(regime = "thin", what = "standing yr 50", merchandize_trees(subset(fut_thin, year == 50))$per_acre))
 r1(prod[order(prod$stand), c("stand", "regime", "what", "saw_bf", "pulp_cords")])
 ```
+
+# Warm-up exercises
+
+Five short problems, about 10-15 minutes each, using only the example data
+and objects created earlier in this guide (`trees`, `site`). Try each one
+before opening the solution. Discussion questions are marked **Think**.
+
+## 1. How full are the stands?
+
+Using `conus_project()` with `years = 0`, compute each stand's SDI as a
+percentage of its FVS-NE maximum (`sdi_max`). Which stand is closest to
+self-thinning, and which is under 35% (below the lower limit of full site
+occupancy)?
+
+**Think:** why does `sdi_max` differ among stands?
+
+<details><summary>Solution</summary>
+
+```{r ex1}
+s0 <- conus_project(trees, years = 0, site = site)$summary
+s0$pct_max <- 100 * s0$sdi / s0$sdi_max
+r1(s0[order(-s0$pct_max), c("stand", "lead_spp", "sdi", "sdi_max", "pct_max")])
+```
+
+`sdi_max` is weighted by the species basal area mix (`species_lookup()`
+gives each species' maximum SDI), so spruce-fir stands can carry more trees
+than hardwood stands of the same QMD.
+
+</details>
+
+## 2. Get the BAF wrong
+
+Re-expand `maine_cruise` with `expand_plots()` using BAF 10 instead of 20,
+then compare stand basal area with `stand_summary()`. How much did basal
+area change, and why is that change exact?
+
+<details><summary>Solution</summary>
+
+```{r ex2}
+args <- list(maine_cruise, design = "prism", stand = "Stand", plot = "Plot",
+             species = "Species", dbh = "DBH", cr = "CR", species_codes = "fvs")
+s20 <- stand_summary(do.call(expand_plots, c(args, baf = 20)))
+s10 <- stand_summary(do.call(expand_plots, c(args, baf = 10)))
+r1(data.frame(stand = s20$stand, ba20 = s20$ba, ba10 = s10$ba, ratio = s10$ba / s20$ba))
+```
+
+Each tallied tree represents BAF ft²/ac, so basal area scales linearly with
+BAF: halving the BAF halves every estimate. TPA, volume and everything
+downstream are off by the same factor, which is why the BAF goes on every
+tally sheet.
+
+</details>
+
+## 3. Read a stem
+
+A white pine is 16 in. DBH and 80 ft tall. Use the taper functions to find:
+(a) the height to a 6-in. top, (b) merchantable volume to a 4-in. top with a
+1-ft stump, and (c) that volume as a share of total stem volume.
+
+<details><summary>Solution</summary>
+
+```{r ex3}
+height_at_diameter(16, 80, d = 6, spp = "WP")
+v_merch <- kozak_volume(16, 80, "WP", stump = 1, top_d = 4)
+v_tot   <- kozak_volume(16, 80, "WP")
+c(merch = v_merch, total = v_tot, share = v_merch / v_tot)
+```
+
+</details>
+
+## 4. How sensitive is the projection?
+
+Project stand SF-1 for 50 years with diameter growth multiplied by 0.9, 1.0
+and 1.1 (`mult = list(dg = ...)`). By what percentage does year-50 basal
+area change? Repeat with mortality (`mult = list(mort = ...)`).
+
+**Think:** which parameter is more important to get right for this stand,
+and what does that suggest about where to spend field effort?
+
+<details><summary>Solution</summary>
+
+```{r ex4}
+sf <- subset(trees, stand == "SF-1")
+sens <- do.call(rbind, lapply(c("dg", "mort"), function(p) do.call(rbind, lapply(c(0.9, 1, 1.1), function(k) {
+  s <- conus_project(sf, 50, site = site, mult = setNames(list(k), p))$summary
+  data.frame(component = p, mult = k, ba50 = s$ba[s$year == 50])
+}))))
+sens$pct_change <- 100 * (sens$ba50 / ave(sens$ba50, sens$component, FUN = function(x) x[2]) - 1)
+r1(sens)
+```
+
+</details>
+
+## 5. Design a thinning
+
+For WP-3, compare thinning from below at year 0 to residual basal areas
+of 60, 80, 100 and 120 ft²/ac (cut trees ≥ 4.5 in.). For each, add the
+sawlog board feet harvested at year 0 to the sawlog board feet standing at
+year 50. Which residual gives the most total sawtimber? (WP-3 starts near 190 ft²/ac.)
+
+**Think:** what is missing from "total board feet" as a criterion? (Timing
+of revenue, log grade, regeneration, wildlife and windfirmness all come to
+mind. `crit.throw()` and `ValueEstimate()` cover some of these.)
+
+<details><summary>Solution</summary>
+
+```{r ex5}
+wp <- subset(trees, stand == "WP-3")
+thin_tab <- do.call(rbind, lapply(c(60, 80, 100, 120), function(rba) {
+  th  <- treatment(0, "thin_below", residual_ba = rba, min_dbh = 4.5)
+  cut <- apply_treatment(wp, th)$cut
+  fut <- conus_project(wp, 50, site = site, regime = list(th), keep_trees = TRUE)$trees
+  data.frame(residual_ba = rba,
+             cut_bf  = sum(merchandize_trees(cut)$per_acre$saw_bf),
+             yr50_bf = sum(merchandize_trees(subset(fut, year == 50))$per_acre$saw_bf))
+}))
+thin_tab$total_bf <- thin_tab$cut_bf + thin_tab$yr50_bf
+r1(thin_tab)
+```
+
+</details>
+
+## Going further
+
+* Turn the density backstop off (`sdi_limit = NA`) and rerun exercise 4.
+  What happens to the saplings, and why does the model need the backstop?
+* If FVS is installed, repeat exercise 5 with `engine = "fvs"` in
+  `project_stands()` and compare the engines.
+* Replace `maine_cruise` with your own cruise using `read_inventory()` and
+  your column names.
 
 # Function index
 
