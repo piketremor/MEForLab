@@ -12,7 +12,9 @@ apply_treatment(trees, a)
 \item{a}{a [treatment()]}
 }
 \value{
-list(trees = residual tree list, removed = c(ba, tpa, vol))
+list: `trees` (residual tree list), `removed` (c(ba, tpa, vol)
+  removed per acre) and `cut` (the removed trees as a tree list, e.g. for
+  [merchandize_trees()])
 }
 \description{
 Apply one treatment to a single stand's tree list

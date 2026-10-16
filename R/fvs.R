@@ -8,26 +8,58 @@
 ## covered by the Northeast (NE) variant; the Acadian (ACD) variant is the
 ## regionally calibrated alternative where it is installed.
 
-#' Locate an FVS executable
+#' Locate an FVS program (executable or library)
 #'
 #' Looks in `dir`, then `getOption("MEForLab.fvs_dir")`, the `FVS_BIN`
 #' environment variable, the usual Windows install folders, and the PATH.
+#' Accepts either form FVS ships in: a stand-alone executable (`FVSne.exe`,
+#' or `FVSne` on Linux/macOS) or the shared library the FVS interface uses
+#' (`FVSne.dll`, `.so`, `.dylib`). The executable is preferred when both
+#' exist.
 #'
 #' @param variant FVS variant code, e.g. "ne" or "acd"
-#' @param dir folder holding the executables (optional)
-#' @return full path to the executable, or NA if not found
+#' @param dir folder holding the FVS programs (optional)
+#' @return full path to the executable or library, or NA if not found
 #' @examples
 #' fvs_find("ne")
 #' @export
 fvs_find <- function(variant = "ne", dir = NULL) {
-  exe <- paste0("FVS", tolower(variant), if (.Platform$OS.type == "windows") ".exe" else "")
+  base <- paste0("FVS", tolower(variant))
+  files <- c(paste0(base, if (.Platform$OS.type == "windows") ".exe" else ""),
+             paste0(base, .Platform$dynlib.ext))
   dirs <- c(dir, getOption("MEForLab.fvs_dir"), Sys.getenv("FVS_BIN"),
             "C:/FVSbin", "C:/FVS/FVSbin", "C:/FVS/FVSSoftware/FVSbin",
             file.path(Sys.getenv("USERPROFILE"), "FVSbin"))
   dirs <- dirs[nzchar(dirs)]
-  cand <- c(file.path(dirs, exe), unname(Sys.which(exe)))
-  cand <- cand[nzchar(cand) & file.exists(cand)]
+  cand <- c(as.vector(outer(dirs, files, file.path)), unname(Sys.which(files[1])))
+  # executables first, then libraries, in folder order
+  lib <- endsWith(cand, .Platform$dynlib.ext)
+  cand <- c(cand[!lib], cand[lib])
+  cand <- cand[nzchar(cand) & file.exists(cand) & !dir.exists(cand)]
   if (length(cand)) normalizePath(cand[1], winslash = "/") else NA_character_
+}
+
+# Run a keyword file through the FVS shared library (FVSne.dll etc.), the way
+# the FVS interface's rFVS package does: load, set the command line, call fvs()
+# until it reports it has finished.
+.fvs_run_lib <- function(lib, keyfile) {
+  if (.Platform$OS.type == "windows") {        # let Windows find FVS's companion DLLs
+    old_path <- Sys.getenv("PATH")
+    Sys.setenv(PATH = paste(normalizePath(dirname(lib)), old_path, sep = ";"))
+    on.exit(Sys.setenv(PATH = old_path), add = TRUE)
+  }
+  dll <- dyn.load(lib, local = TRUE, now = TRUE)
+  on.exit(try(dyn.unload(lib), silent = TRUE), add = TRUE)
+  pkg <- dll[["name"]]
+  cl <- paste0("--keywordfile=", keyfile)
+  do.call(".C", list("CfvsSetCmdLine", cl, as.integer(nchar(cl)), as.integer(0), PACKAGE = pkg))
+  # fvs() returns 0 after each stand (restart code 100 = stand finished) and
+  # non-zero once the keyword file is exhausted; no stop points are set here
+  for (i in seq_len(1e5)) {
+    rtn <- do.call(".Fortran", list("fvs", as.integer(0), PACKAGE = pkg))[[1]]
+    if (rtn != 0) break
+  }
+  paste("FVS library return code", rtn)
 }
 
 #' Write one stand's tree list in FVS format
@@ -137,7 +169,8 @@ fvs_write_keywords <- function(stand_files, file, inv_year = 2025, years = 50,
 #' @param years,cycle projection length and FVS cycle length
 #' @param regime list of [treatment()]s
 #' @param variant FVS variant ("ne" for Maine)
-#' @param fvs_bin path to the executable; found with [fvs_find()] if NULL
+#' @param fvs_bin path to the FVS executable (`FVSne.exe`) or library
+#'   (`FVSne.dll`); found with [fvs_find()] if NULL
 #' @param inv_year inventory year
 #' @param keywords extra keyword lines for every stand
 #' @param pass_ht see [fvs_write_trees()]. The default, "all", hands FVS the
@@ -161,8 +194,8 @@ fvs_project <- function(trees, years = 50, cycle = 5, regime = list(), variant =
                         workdir = tempfile("fvs_")) {
   bin <- if (is.null(fvs_bin)) fvs_find(variant) else fvs_bin
   if (is.na(bin) || !file.exists(bin))
-    stop("FVS", variant, " executable not found. Install FVS (https://www.fs.usda.gov/fvs/software/) ",
-         "and point to it with options(MEForLab.fvs_dir = 'C:/FVSbin') or fvs_bin =.")
+    stop("FVS", variant, " (.exe or .dll) not found. Install FVS (https://www.fs.usda.gov/fvs/software/) ",
+         "and point to its folder with options(MEForLab.fvs_dir = 'C:/FVS/FVSSoftware/FVSbin') or fvs_bin =.")
   dir.create(workdir, recursive = TRUE, showWarnings = FALSE)
   old_out <- list.files(workdir, pattern = "\\.(db|sum|out|key|tre)$", full.names = TRUE)
   if (length(old_out)) unlink(old_out)            # never mix results from earlier runs
@@ -174,7 +207,9 @@ fvs_project <- function(trees, years = 50, cycle = 5, regime = list(), variant =
   fvs_write_keywords(tf, key, inv_year, years, cycle, regime, keywords,
                      location = location)
   old <- setwd(workdir); on.exit(setwd(old), add = TRUE)
-  log <- suppressWarnings(system2(bin, "--keywordfile=run.key", stdout = TRUE, stderr = TRUE))
+  is_lib <- grepl("\\.(dll|so|dylib)$", bin, ignore.case = TRUE)
+  log <- if (is_lib) .fvs_run_lib(bin, "run.key") else
+    suppressWarnings(system2(bin, "--keywordfile=run.key", stdout = TRUE, stderr = TRUE))
   setwd(old)
   summ <- fvs_read_summary(workdir)
   if (is.null(summ) || !nrow(summ))

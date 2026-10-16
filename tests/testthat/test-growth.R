@@ -78,3 +78,10 @@ test_that("read_inventory takes any data frame or file: fixed plots, common name
                                         "eastern white pine" = "WP"))
   expect_equal(sum(0.005454154 * tl2$dbh^2 * tl2$tpa), 2 * (20 * 3 / 2))  # per stand: BAF x 3 trees / 2 points
 })
+
+test_that("FVS runs through the shared library (FVSne.dll/.so) when that is what is installed", {
+  lib <- Sys.getenv("FVS_LIB")      # path to FVSne.dll / FVSne.so, set when available
+  skip_if(!nzchar(lib) || !file.exists(lib), "FVS library not available")
+  r <- fvs_project(transform(tl, ht_imputed = FALSE), years = 10, fvs_bin = lib)
+  expect_true(nrow(r$summary) >= 3)
+})

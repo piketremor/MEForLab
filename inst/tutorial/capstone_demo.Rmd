@@ -54,7 +54,7 @@ re-run.
 * R (≥ 4.1) and RStudio.
 * The 2025 inventory folder (`2025_DBD_Inventory`). Set `data_dir` below if
   your copy lives somewhere else.
-* *Optional:* the USDA Forest Service FVS executables
+* *Optional:* the USDA Forest Service FVS software (`FVSne.exe` or `FVSne.dll`)
   (<https://www.fs.usda.gov/fvs/software/>). Section 7 needs them; everything
   else runs without FVS.
 
@@ -75,8 +75,13 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 
-data_dir <- params$data_dir
-options(MEForLab.fvs_dir = params$fvs_dir)      # where FVSne(.exe) lives, if installed
+# EDIT THESE TWO PATHS for your computer
+data_dir <- "G:/My Drive/Research/UMaine_Demerritt/UF_Demeritt_MgtPlan2026/2025_DBD_Inventory"
+fvs_dir  <- "C:/FVS/FVSSoftware/FVSbin"   # folder with FVSne.exe or FVSne.dll; only for Section 7
+
+# (only when the whole file is knit: the YAML header values win)
+if (isTRUE(getOption("knitr.in.progress"))) { data_dir <- params$data_dir; fvs_dir <- params$fvs_dir }
+options(MEForLab.fvs_dir = fvs_dir)
 
 theme_set(theme_minimal(base_size = 12) +
           theme(panel.grid.minor = element_blank(),
@@ -320,19 +325,28 @@ ggplot(forest_total, aes(year, vol_mcf)) +
 
 # Growth engine 2: compiled FVS (Northeast variant)
 
-`fvs_project()` writes each stand's tree list and one keyword file, runs the
-FVS executable, and reads FVS's own summary table back from its output
+`fvs_project()` writes each stand's tree list and one keyword file, runs FVS
+(the `.exe`, or the `.dll` the FVS interface uses), and reads FVS's own summary table back from its output
 database. The returned columns match the CONUS engine's, so the two can be
 compared directly. The run folder is kept so you can open `run.key` and
 `run.out` and see exactly what FVS did. That's the best way to learn FVS
 keywords.
 
 ```{r fvs-available}
+fvs_find("ne")                    # path to FVSne.exe or FVSne.dll, or NA if R can't find it
 fvs_ok <- !is.na(fvs_find("ne"))
 fvs_ok
 ```
 
+If this is `FALSE`, either FVS isn't installed, or it's somewhere other than
+`fvs_dir`. Find the folder that holds `FVSne.exe` or `FVSne.dll` (the
+current FVS installer puts the DLLs in `C:/FVS/FVSSoftware/FVSbin`; older
+installs used `C:/FVSbin`), set `options(MEForLab.fvs_dir = "that/folder")`,
+and rerun the chunk. Either file works: MEForLab runs the `.exe` directly,
+or loads the `.dll` the same way the FVS interface (rFVS) does.
+
 ```{r fvs-run, eval = fvs_ok}
+if (!fvs_ok) stop("FVSne not found: set options(MEForLab.fvs_dir = 'folder with FVSne.exe or FVSne.dll') first")
 fvs <- project_stands(trees, "fvs", years = 50, cycle = 5)
 
 both <- bind_rows(forest, fvs) |>

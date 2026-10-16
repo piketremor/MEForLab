@@ -34,11 +34,14 @@
     and values: `KozakTaper()`, `KozakTreeVol()`, `DOBtoDIB()`,
     `MerchDiam()`, `Merchandize.ASG()`, `MerchHT()`, `Stick.Cruise()`,
     `Merchandize.Form.Risk()`, `Sawlog.Likelihood()`, `ValueEstimate()`,
-    `Genus()`, `Smalians()`. The `purrr` and `dplyr` dependencies are gone.
+    `Genus()`. The `purrr` and `dplyr` dependencies are gone.
   - `Kozak_merchR()` is the PNW (Douglas-fir) merchandiser. It can now use
     the NE/GL taper via `region =` and a `spp` column.
 
 ## Fixes
+
+* One `smalians()` (with `units = "imperial"` or `"metric"`) replaces the
+  duplicate `smalians()` / GreenTimbMerch `Smalians()` pair.
 
 * GreenTimbMerch taper fixes:
   - **Operator precedence:** `SPP == "BA"`, `"TA"` and `"NC"` were matched

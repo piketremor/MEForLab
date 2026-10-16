@@ -224,6 +224,7 @@ wykoff.ht(c("RS", "BF", "SM", "WP"), c(10, 8, 14, 20))   # height (ft), FVS-NE W
 MCW(c("RS", "SM"), c(10, 14))                            # max crown width (ft), Russell & Weiskittel 2011
 vol.calc(c("RS", "SM"), c(10, 14), c(60, 70))            # stem volume (ft3), Honer form
 smalians(10, 8, 16)                                      # Smalian's log volume (ft3)
+smalians(30, 25, 2.44, units = "metric")                 # same rule in cm and m (m3)
 ```
 
 `BCKozakVol()` integrates any taper function you give it into stem volume
@@ -544,7 +545,6 @@ KozakTaper("ob", "RO", DHT = 12, DBH = 40, HT = 20)        # cm at 12 m
 KozakTreeVol("ob", "WP", DBH = 32.5, HT = 21)              # m3
 KozakTreeVol("ib", "RO", 40, 18, stump = 0.5, topD = 25.3) # m3 inside bark to a 25.3-cm top
 DOBtoDIB("SM", 25.4)                                       # cm
-Smalians(30, 25, 244)                                      # cm3 (cm diameters, cm length)
 ```
 
 ## Pacific Northwest: `Kozak_merchR()`
@@ -625,7 +625,7 @@ Growth (common)|project_stands, treatment, apply_treatment
 FVS|fvs_find, fvs_write_trees, fvs_write_keywords, fvs_project, fvs_read_summary
 Taper|kozak_taper, kozak_volume, height_at_diameter, dob_to_dib, kozak_params
 Merchandising|merch_specs, merchandize_trees, Merchandize.ASG, MerchHT, Stick.Cruise, Merchandize.Form.Risk, Sawlog.Likelihood, ValueEstimate, MerchDiam, Kozak_merchR
-GreenTimbMerch (metric)|KozakTaper, KozakTreeVol, DOBtoDIB, Smalians
+GreenTimbMerch (metric)|KozakTaper, KozakTreeVol, DOBtoDIB
 GIS|coord.convert, upslope, create_layers
 Data|maine_cruise, maine_saplings", sep = "|", header = TRUE, strip.white = TRUE)
 knitr::kable(idx)

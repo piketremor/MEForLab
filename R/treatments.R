@@ -43,7 +43,9 @@ print.mfl_treatment <- function(x, ...) {
 #'
 #' @param trees one stand's tree list (`dbh`, `tpa`, `fvs`, `ht`)
 #' @param a a [treatment()]
-#' @return list(trees = residual tree list, removed = c(ba, tpa, vol))
+#' @return list: `trees` (residual tree list), `removed` (c(ba, tpa, vol)
+#'   removed per acre) and `cut` (the removed trees as a tree list, e.g. for
+#'   [merchandize_trees()])
 #' @export
 apply_treatment <- function(trees, a) {
   ba_i <- 0.005454154 * trees$dbh^2 * trees$tpa
@@ -75,6 +77,8 @@ apply_treatment <- function(trees, a) {
   v <- if (!is.null(trees$ht)) suppressWarnings(vol.calc(trees$fvs, trees$dbh, trees$ht)) else NA
   removed <- c(ba = sum(ba_i * cut_frac), tpa = sum(cut_tpa),
                vol = sum(v * cut_tpa, na.rm = TRUE))
+  cut <- trees; cut$tpa <- cut_tpa
   trees$tpa <- trees$tpa - cut_tpa
-  list(trees = trees[trees$tpa > 1e-6, , drop = FALSE], removed = removed)
+  list(trees = trees[trees$tpa > 1e-6, , drop = FALSE], removed = removed,
+       cut = cut[cut$tpa > 1e-6, , drop = FALSE])
 }

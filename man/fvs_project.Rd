@@ -27,7 +27,8 @@ fvs_project(
 
 \item{variant}{FVS variant ("ne" for Maine)}
 
-\item{fvs_bin}{path to the executable; found with [fvs_find()] if NULL}
+\item{fvs_bin}{path to the FVS executable (`FVSne.exe`) or library
+(`FVSne.dll`); found with [fvs_find()] if NULL}
 
 \item{inv_year}{inventory year}
 

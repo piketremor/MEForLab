@@ -1,7 +1,0 @@
-^.*\.Rproj$
-^\.Rproj\.user$
-^docs$
-^\.Rhistory$
-^README\.Rmd$
-^tutorial/.*\.html$
-^data-raw$

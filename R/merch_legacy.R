@@ -60,12 +60,6 @@ KozakTreeVol <- function(Bark, SPP, DBH, HT, Planted = FALSE, stump = NA, topHT 
 #' @export
 DOBtoDIB <- function(SPP, dob) round(dob_to_dib(dob, SPP, units = "metric"), 4)
 
-#' @rdname smalians
-#' @param r1,r2 GreenTimbMerch interface: end diameters (cm)
-#' @param len GreenTimbMerch interface: length (cm); returns cm3
-#' @export
-Smalians <- function(r1, r2, len) round(((r1 / 2)^2 * pi + (r2 / 2)^2 * pi) / 2 * len, 4)
-
 #' Merchandising specifications by species
 #'
 #' Minimum small-end (outside bark) diameters, in cm, for sawlogs, pallet

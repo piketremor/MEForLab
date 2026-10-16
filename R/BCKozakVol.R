@@ -37,12 +37,19 @@ BCKozakVol <- function(SPP, dbh, hgt, taper = NULL, sgmts = 100) {
 
 #' Smalian's log volume
 #'
-#' @param d1,d2 End diameters (in.)
-#' @param L Length (ft)
-#' @return Volume (ft3)
+#' Volume of a log from its two end diameters: the average of the two end
+#' areas times the length.
+#'
+#' @param d1,d2 end diameters (in. for imperial, cm for metric)
+#' @param L length (ft for imperial, m for metric)
+#' @param units "imperial" (returns ft3) or "metric" (returns m3)
+#' @return log volume
 #' @examples
-#' smalians(10, 8, 16)
+#' smalians(10, 8, 16)                         # ft3
+#' smalians(30, 25, 2.44, units = "metric")    # m3
 #' @export
-smalians <- function(d1, d2, L) {
-  0.005454154 * (d1^2 + d2^2) / 2 * L
+smalians <- function(d1, d2, L, units = c("imperial", "metric")) {
+  units <- match.arg(units)
+  k <- if (units == "imperial") pi / 4 / 144 else pi / 4 / 1e4
+  k * (d1^2 + d2^2) / 2 * L
 }

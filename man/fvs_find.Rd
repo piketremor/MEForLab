@@ -2,21 +2,25 @@
 % Please edit documentation in R/fvs.R
 \name{fvs_find}
 \alias{fvs_find}
-\title{Locate an FVS executable}
+\title{Locate an FVS program (executable or library)}
 \usage{
 fvs_find(variant = "ne", dir = NULL)
 }
 \arguments{
 \item{variant}{FVS variant code, e.g. "ne" or "acd"}
 
-\item{dir}{folder holding the executables (optional)}
+\item{dir}{folder holding the FVS programs (optional)}
 }
 \value{
-full path to the executable, or NA if not found
+full path to the executable or library, or NA if not found
 }
 \description{
 Looks in `dir`, then `getOption("MEForLab.fvs_dir")`, the `FVS_BIN`
 environment variable, the usual Windows install folders, and the PATH.
+Accepts either form FVS ships in: a stand-alone executable (`FVSne.exe`,
+or `FVSne` on Linux/macOS) or the shared library the FVS interface uses
+(`FVSne.dll`, `.so`, `.dylib`). The executable is preferred when both
+exist.
 }
 \examples{
 fvs_find("ne")
