@@ -588,6 +588,87 @@ cat("> `raster`/`topmodel` were not installed when this guide was built, so the"
     "`upslope()` / `create_layers()` example was not run.\n")
 ```
 
+# Canopy structure: CrownPrint
+
+`crownprint()` describes where each species' crowns sit in the vertical
+canopy (Premer 2026). For every plot, *canopy space* runs from the lowest
+live crown base (0) to the top of the tallest tree (1). Each tree's crown is
+the interval from its height to crown base (HCB) to its tip, and crowns are
+tallied, weighted by trees per acre, in 100 layers of 0.01. Each species'
+(or group's) profile is then summarised by a beta distribution:
+
+* alpha > beta: crowns concentrated toward the upper canopy;
+* alpha < beta: concentrated toward the lower canopy;
+* alpha = beta: symmetric about mid-canopy. The larger alpha + beta, the
+  narrower the band.
+
+Inventories rarely measure every height and crown, so the first two steps
+complete them.
+
+## One call
+
+```{r cp-one}
+sf <- subset(trees, stand %in% c("SF-1", "MX-5"))
+cp <- crownprint(sf,
+                 ht_method  = "wykoff",   # or "local" (fit eq. 1) or "paper"
+                 hcb_method = "local",    # or "paper" or "observed"
+                 group = c(RS = "spruce", WS = "spruce", BS = "spruce",
+                           BF = "balsam fir", RM = "red maple"),
+                 boot = 100, seed = 1)
+cp
+```
+
+The table gives back-transformed alpha and beta with 95% intervals, the mean
+canopy position (`mean_pos`), its SD (`sd_pos`), and the p-value for
+alpha = beta (`p_skew`). Species not named in `group` are pooled as
+"Other"; leave `group = NULL` to keep every species separate. The text below
+the table is the interpretation (`cp$interpretation`, or
+`cp_interpret(cp, pairs = "shared")` for every pair of groups sharing plots).
+
+```{r cp-plot, fig.height = 4.5}
+plot(cp, plots = TRUE)   # thick: group estimate; thin: each plot
+```
+
+## Step by step
+
+The wrapper chains six functions, each usable on its own:
+
+```{r cp-steps}
+h  <- cp_height(sf, method = "local", min_n = 8)   # 1. total height
+attr(h, "ht_fit")[, c("species", "method", "n_obs", "a", "b", "rmse_m")]
+hc <- cp_hcb(h, method = "local")                  # 2. height to crown base
+pr <- cp_profile(hc, by = "stand")                 # 3. canopy space + tallies
+head(subset(pr$profile, occupancy > 0))
+b  <- cp_beta(pr, boot = 100, seed = 1)            # 4. beta per plot x species
+r1(head(b[, c("pid", "group", "n_trees", "alpha", "alpha_se", "beta", "beta_se", "mean_pos")]))
+sm <- cp_summary(b, random = NULL)                 # 5. group estimates
+r1(sm$groups[, c("by", "group", "n_plots", "alpha", "beta", "mean_pos", "p_skew")])
+cat(strwrap(head(cp_interpret(sm), 3), exdent = 2), sep = "\n")   # 6. interpretation
+```
+
+Notes on the methods:
+
+* **Height.** `"wykoff"` is the FVS-NE equation (`wykoff.ht()`). `"local"`
+  fits `HT = 1.37 + exp(a + b / (DBH + 0.1))` (m, cm) per species, with plot
+  random effects (nlme) when 3 or more plots have heights. Species with fewer
+  than `min_n` heights fall back to Wykoff. `"paper"` uses Premer (2026)
+  Table 4 for DF, WH, BF and RS. Measured heights are kept
+  (`keep_measured = TRUE`).
+* **Crown base.** `"local"` fits eq. 2, `HCB = HT (1 - a exp(-b DBH^c))`, on
+  the crown-ratio scale. If the fit fails or hits a bound, the species' mean
+  crown ratio is used (`"local-mean"`). `"paper"` uses Table 5, and
+  `"observed"` uses median measured crown ratios. Sapling-tally crown ratios
+  are defaults, not measurements, so they are never used for fitting.
+* **Errors.** Plot-level SEs come from resampling the group's trees within
+  the plot. Group estimates are means of log(alpha) and log(beta) across
+  plots. With 3 or more stands, `crownprint()` uses
+  `lme(log(alpha) ~ 0 + group, random = ~1 | stand)` (eq. 6) instead.
+* **Comparisons.** `cp$summary$pairwise` compares groups on the plots they
+  share (paired difference in mean canopy position). It also gives the
+  overlap of their fitted profiles (1 = identical, 0 = fully stratified).
+* Occupancy is an index of where crowns are, not of leaf area. HCB is only
+  a proxy for the lower limit of active foliage.
+
 # A complete workflow
 
 Inventory to tree list, a 50-year thinning comparison, then products:
@@ -751,6 +832,7 @@ Tree equations|wykoff.ht, MCW, vol.calc, smalians, BCKozakVol
 Site index|vicary.site, vicary.height, steinman.site
 Competition|hegyi.index, braathe.index, glover.hool.index, crown.overlap, ek.monserud.index, conus_competition
 Wind|crit.break, crit.throw
+Canopy structure|crownprint, cp_height, cp_hcb, cp_profile, cp_beta, cp_summary, cp_interpret
 Growth (CONUS)|conus_params, conus_coverage, conus_dg, conus_hg, conus_survival, conus_dhtlc, conus_project
 Growth (common)|project_stands, treatment, apply_treatment
 FVS|fvs_find, fvs_write_trees, fvs_write_keywords, fvs_project, fvs_read_summary
@@ -770,6 +852,7 @@ knitr::kable(idx)
 * Kozak, A. (2004). My last words on taper equations. *The Forestry Chronicle* 80: 507-515.
 * Li, R., Weiskittel, A., Dick, A.R., Kershaw, J.A., Seymour, R.S. (2012). Regional stem taper equations for eleven conifer species in the Acadian region of North America. *Northern Journal of Applied Forestry* 29: 5-14.
 * MacFarlane, D.W., Weiskittel, A.R. (2016). A new method for capturing stem taper variation for trees of diverse morphological types. *Canadian Journal of Forest Research* 46: 804-815.
+* Premer, M.I. (2026). CrownPrint: a crown-profile approach to quantifying canopy structure. *Canadian Journal of Forest Research* 56: 1-14. doi:10.1139/cjfr-2025-0239
 * Russell, M.B., Weiskittel, A.R. (2011). Maximum and largest crown width equations for 15 tree species in Maine. *Northern Journal of Applied Forestry* 28: 84-91.
 * Vicary, B.P., Brann, T.B., Griffin, R.H. (1984). Base-age invariant polymorphic site index curves for even-aged spruce-fir stands in Maine. MAFES Bulletin 802.
 * Wykoff, W.R., Crookston, N.L., Stage, A.R. (1982). User's guide to the Stand Prognosis Model. USDA FS GTR INT-133.

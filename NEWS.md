@@ -1,3 +1,25 @@
+# MEForLab 0.2.1
+
+## New
+
+* CrownPrint (Premer 2026, Can. J. For. Res. 56: 1-14,
+  doi:10.1139/cjfr-2025-0239): `crownprint()` runs the full crown-profile
+  workflow on a plot inventory, with nested step functions:
+  - `cp_height()`: total height from the FVS-NE Wykoff equation, the paper's
+    Table 4 coefficients, or a local per-species fit of eq. 1 (plot random
+    effects via nlme, falling back to nls).
+  - `cp_hcb()`: height to crown base from a local fit of eq. 2, the paper's
+    Table 5 coefficients, or observed crown-ratio medians.
+  - `cp_profile()`: normalized canopy space per plot (lowest live crown = 0,
+    tallest tree = 1) and expansion-weighted crown occupancy by species or
+    user-defined group in 0.01 layers.
+  - `cp_beta()`: beta fits per plot x group with bootstrap SEs.
+  - `cp_summary()`: group alpha / beta on the log scale (lme with a random
+    stand effect when there are >= 3 stands), paired between-group
+    comparisons and profile overlap.
+  - `cp_interpret()`, plus `print`, `summary` and `plot` methods.
+* `nlme` added to Suggests; `grDevices` to Imports.
+
 # MEForLab 0.2.0
 
 ## New
