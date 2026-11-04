@@ -1,7 +1,7 @@
 Package: MEForLab
 Type: Package
 Title: Common Analysis Procedures, Forestry Functions, and Growth Projection Tools for the Maine Forest Lab
-Version: 0.2.1
+Version: 0.2.2
 Authors@R: person("Mike", "Premer", email = "michael.premer@maine.edu", role = c("aut", "cre"))
 Description: Forestry functions used at the Maine Forest Management Lab,
     University of Maine (stand density, competition indices, site index,

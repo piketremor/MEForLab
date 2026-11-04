@@ -1,3 +1,28 @@
+# MEForLab 0.2.2
+
+## New
+
+* Forester marking workflow: `cp_view_stand()` (species crown-area profile and a
+  suggested gap band), `cp_plan()` (strata, gap bands, residual BA and species
+  favor weights; transparent priority rule or `method = "optimize"`),
+  `cp_dbh_guide()` (trees/ac to cut and leave by species x 2-in. DBH class with a
+  crown tie-breaker), `cp_guide_sheet()` (one-page PNG: profiles before/after,
+  guide grid, diameter distribution) and `cp_workflow()` (all four, writes the
+  CSV and sheet). Supporting `cp_mark_species()` (species x stratum growing-space
+  allocation) and `cp_species_group()`.
+* `cp_printsplit()`: PrintSplit (S), the relative degree of vertical separation
+  between canopy strata across one or more gap bands of a CrownPrint profile
+  (1 = fully separated, 0 = no separation, < 0 = strata merged); independent
+  of stocking. `cp_mark()` reports it before and after marking
+  (`$printsplit`). `cp_gap_depth()` is kept as a deprecated alias.
+* Crown-profile marking: `cp_mark()` marks trees for removal so the residual
+  stand's crown occupancy in canopy space approaches a target profile (by
+  default the stand's own profile with a gap band emptied between two strata)
+  at a residual basal area. Crown-area weighting (`MCW()`), canopy limits fixed
+  at pre-harvest values, greedy Hellinger-distance search, protected trees and
+  reason codes. Helpers: `cp_target_carve()`, `cp_target()`;
+  `print` and `plot` methods.
+
 # MEForLab 0.2.1
 
 ## New
