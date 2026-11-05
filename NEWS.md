@@ -2,6 +2,12 @@
 
 ## New
 
+* `TDM()`: mean diameter differentiation (Fuldner 1995) of a subject tree vs
+  its competitors.
+* `SCI()`: structural complexity index (Zenner and Hibbs 2000) from a polar
+  stem map (distance, azimuth) with DBH as the surface height; `geometry` added
+  to Suggests.
+
 * Forester marking workflow: `cp_view_stand()` (species crown-area profile and a
   suggested gap band), `cp_plan()` (strata, gap bands, residual BA and species
   favor weights; transparent priority rule or `method = "optimize"`),

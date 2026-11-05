@@ -14,7 +14,7 @@ Encoding: UTF-8
 LazyData: true
 Depends: R (>= 4.1)
 Imports: stats, utils, graphics, grDevices
-Suggests: nlme, readxl, RSQLite, DBI, ggplot2, dplyr, tidyr, sf, raster, topmodel,
+Suggests: nlme, geometry, readxl, RSQLite, DBI, ggplot2, dplyr, tidyr, sf, raster, topmodel,
     knitr, rmarkdown, testthat (>= 3.0.0)
 Config/testthat/edition: 3
 RoxygenNote: 7.3.2
